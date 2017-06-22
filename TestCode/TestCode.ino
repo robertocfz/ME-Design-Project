@@ -34,7 +34,7 @@ void setup() {
   updateShift(16383,8191);
   delay(250);
   updateShift(0,0);
-  delay(500);
+  delay(1000);
 
 }
 
@@ -56,12 +56,39 @@ void updateShift(uint16_t left, uint16_t right){
    digitalWrite(LATCH,HIGH);
 }
 
-
+void runLeft() {
+  int x = 100;
+  updateShift(64,8);
+  delay(x);
+  updateShift(96,24);
+  delay(x);
+  updateShift(112,56);
+  delay(x);
+  updateShift(120,120);
+  delay(x);
+  updateShift(124,248);
+  delay(x);
+  updateShift(126,273);
+  delay(x);
+  updateShift(0,0);
+}
 void loop() {
-  //updateShift(126,504); //Left and Right horn
+  int timeDelay = 1000;
   updateShift(14590,5116); //Periph
-  //updateShift(1792,3074); //brake lights
-  delay(100);
+  delay(timeDelay);
+  //updateShift(126,504); //Left and Right horn
+  //delay(timeDelay);
+  runLeft();
+  runLeft();
+  runLeft();
+  updateShift(1792,3074); //brake lights
+  delay(timeDelay);
+  updateShift(leftPer+leftBrake,rightPer+rightBrake); //All on
+  delay(timeDelay);
+  updateShift(0,0);
+  delay(500);
+  
+
 }
 
 
