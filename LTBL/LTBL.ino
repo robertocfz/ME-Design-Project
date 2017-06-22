@@ -72,6 +72,20 @@ void runLeft() {
   delay(x);
   updateShift(0,0);
 }
+
+void Calibrate() {
+  //enter calibration if brake is switched 3 times
+
+
+  //detect 4 or 5 wire configuration
+  //do this by checking when the brake pedal is depressed 
+  //if both turn signals are on, it is 4 wire. otherwise it is 5
+
+  //calibrate turn signal timing
+  //use pulseIn library
+  
+}
+
 void loop() {
   int timeDelay = 1000;
   updateShift(14590,5116); //Periph
