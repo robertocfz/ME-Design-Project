@@ -19,7 +19,15 @@
 			"file": "LTBL.ino",
 			"settings":
 			{
-				"buffer_size": 4505,
+				"buffer_size": 4510,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "Icon\r",
+			"settings":
+			{
+				"buffer_size": 0,
 				"line_ending": "Unix"
 			}
 		}
@@ -179,7 +187,7 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
@@ -188,15 +196,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4505,
+						"buffer_size": 4510,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2431,
-								2431
+								0,
+								0
 							]
 						],
 						"settings":
@@ -207,6 +215,34 @@
 						},
 						"translation.x": 0.0,
 						"translation.y": 1539.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "Icon\r",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
