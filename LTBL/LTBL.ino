@@ -16,11 +16,17 @@ volatile int BRAKE = 0;
 volatile int L_LEDS = 0;
 volatile int R_LEDS = 0;
 
-//INITIALIZE VARIABLES
+//INITIALIZE TIMING VARIABLES
 unsigned long currentMillis = 0;
 unsigned long previousMillis = 0;
 unsigned long blinkLength = 75; //milliseconds
+unsigned long brakeTimer = 0; 
+
+//INITIALIZE OTHER VARIABLES
 int brakeflag = 0;
+int brakeCounter = 0;
+int wireConfig = 0;     
+int calibrateWireSuccess = 0;
 
 
 
@@ -86,6 +92,26 @@ void calibrateWiring() {
   //do this by checking when the brake pedal is depressed 
   //if both turn signals are on, it is 4 wire. otherwise it is 5
   
+  while (millis() - currentMillis < 10000) {
+    //read pins
+    BRAKE = digitalRead(BRAKE_PIN);
+    L_TURN = digitalRead(L_TURN_PIN);
+    R_TURN = digitalRead(R_TURN_PIN);
+    currentMillis = millis();           //for timeout exits
+
+    if (BRAKE == HIGH && L_TURN == HIGH && R_TURN == HIGH) {
+      wireConfig = 4;
+      calibrateWireSuccess = 1;
+      break;
+    }
+    else if (BRAKE == HIGH && L_TURN == LOW && R_TURN == LOW) {
+      wireConfig = 5;
+      calibrateWireSuccess = 1;
+      break;
+    }
+  }
+  
+  
 }
 
 
@@ -97,20 +123,6 @@ void calibrateTiming() {
   blinkLength = pulseIn(L_TURN_PIN, HIGH,1000000000); //large number for timeout length in microseconds
 }
 
-void runThrough() {
-  int timeDelay = 1000;
-  updateShift(14590,5116); //Periph
-  delay(timeDelay);
-  runLeft();
-  runLeft();
-  runLeft();
-  updateShift(1792,3074); //brake lights
-  delay(timeDelay);
-  updateShift(leftPer+leftBrake,rightPer+rightBrake); //All on
-  delay(timeDelay);
-  updateShift(0,0);
-  delay(500);
-}
 
 
 void runLeft() {
@@ -155,14 +167,14 @@ void brakeON() {
   if (brakeflag == 0) {
     L_LEDS = L_LEDS + leftBrake;
     R_LEDS = R_LEDS + rightBrake;
-    updateShift(L_LEDS, R_LEDS);
+    updateShift(L_LEDS, R_LEDS); //might not need this line?
     brakeflag = 1;
   }
 
   else{
     L_LEDS = L_LEDS - leftBrake;
     R_LEDS = R_LEDS - rightBrake;
-    updateShift(L_LEDS, R_LEDS);
+    updateShift(L_LEDS, R_LEDS); //might not need this line?
     brakeflag = 0;
   }
 
@@ -170,10 +182,16 @@ void brakeON() {
 
 void loop() {
   //READ PINS
-  //BRAKE = digitalRead(BRAKE_PIN);
+  BRAKE = digitalRead(BRAKE_PIN);
   L_TURN = digitalRead(L_TURN_PIN);
   R_TURN = digitalRead(R_TURN_PIN);
-  
+  currentMillis = millis();
+
+  /////////////////////
+  //CALIBRATION SECTION
+  //if brake is pressed 3 times within 10 secs of turning on
+  /////////////////////
+
   //default to periphery lights
   L_LEDS = leftPer;
   R_LEDS = rightPer;
