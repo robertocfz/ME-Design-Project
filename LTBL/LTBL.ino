@@ -1,25 +1,31 @@
+#include "Arduino.h"
+#include "PinChangeInterrupt.h"
 
 //PINOUTS
-const int DATA = 10; //Physical Pin 2 
-const int LATCH = 9; //Physical Pin 3
-const int CLK = 8; //Physical Pin 5
-const int R_TURN_PIN = 2; //Physical Pin 11
-const int BRAKE_PIN = 1; //Physical Pin 12
-const int L_TURN_PIN = 0; //Physical Pin 13
+#define DATA  10 //Physical Pin 2 
+#define LATCH  9 //Physical Pin 3
+#define CLK  8 //Physical Pin 5
+#define R_TURN_PIN 2 //Physical Pin 11
+#define BRAKE_PIN  1 //Physical Pin 12
+#define L_TURN_PIN  0 //Physical Pin 13
 
-//Pin states
+//PIN STATES
 int R_TURN = 0;
 int L_TURN = 0;
-int BRAKE = 0;
-int L_LEDS = 0;
-int R_LEDS = 0;
+volatile int BRAKE = 0;
+volatile int L_LEDS = 0;
+volatile int R_LEDS = 0;
 
-//random variables
+//INITIALIZE VARIABLES
 unsigned long currentMillis = 0;
 unsigned long previousMillis = 0;
-int x = 500;
+unsigned long blinkLength = 75; //milliseconds
+int brakeflag = 0;
 
-//define lighting paterns
+
+
+
+//LIGHTING STATES
 const int leftHorn = 126;
 const int rightHorn = 504;
 const int leftPer = 14590;
@@ -37,6 +43,9 @@ void setup() {
   pinMode(R_TURN_PIN,INPUT);
   pinMode(BRAKE_PIN,INPUT);
   pinMode(L_TURN_PIN,INPUT);
+
+  //Interrupt for Brakes
+  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);
 
   //turn off all leds to signify reset
   updateShift(0,0);
@@ -84,14 +93,14 @@ void calibrateTiming() {
 
    //calibrate turn signal timing
   //use pulseIn library
+
+  blinkLength = pulseIn(L_TURN_PIN, HIGH,1000000000); //large number for timeout length in microseconds
 }
 
-void runProgram() {
+void runThrough() {
   int timeDelay = 1000;
   updateShift(14590,5116); //Periph
   delay(timeDelay);
-  //updateShift(126,504); //Left and Right horn
-  //delay(timeDelay);
   runLeft();
   runLeft();
   runLeft();
@@ -103,101 +112,72 @@ void runProgram() {
   delay(500);
 }
 
-/*
- * //THIS DOESN'T WORK
-void runLeft() {
-  //126 is value of all horns
-
-  updateShift(L_LEDS + 64 -126,R_LEDS);
-  currentMillis = millis();
-  if(currentMillis - previousMillis >= x) {
-    previousMillis = currentMillis;
-    updateShift(L_LEDS + 96 - 126,R_LEDS);
-  }
-
-  currentMillis = millis();
-  if(currentMillis - previousMillis >= x) {
-    previousMillis = currentMillis;
-    updateShift(L_LEDS + 112 - 126,R_LEDS);
-  }
-  
-  currentMillis = millis();
-  if(currentMillis - previousMillis >= x) {
-    previousMillis = currentMillis;
-    updateShift(L_LEDS + 120 - 126,R_LEDS);
-  }
-
-  currentMillis = millis();
-  if(currentMillis - previousMillis >= x) {
-    previousMillis = currentMillis;
-    updateShift(L_LEDS + 124 - 126,R_LEDS);
-  }
-  
-  updateShift(L_LEDS,R_LEDS);
-  currentMillis = millis();
-  if(currentMillis - previousMillis >= x) {
-    previousMillis = currentMillis;
-    updateShift(0,0);
-  }
-
-}
-*/
 
 void runLeft() {
   //126 is value of all horns
   updateShift(L_LEDS - 126,R_LEDS);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS + 64 -126,R_LEDS);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS + 96 - 126,R_LEDS);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS + 112 - 126,R_LEDS);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS + 120 - 126,R_LEDS);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS + 124 - 126,R_LEDS);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS,R_LEDS);
-  delay(x);
-  updateShift(0,0);
+  delay(blinkLength);
+  //updateShift(0,0);
 }
 
 void runRight() {
   //504 is value of all horns
-  updateShift(L_LEDS, R_LEDS - 504);
-  delay(x);
+  updateShift(L_LEDS, R_LEDS - 504); 
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS + 8 - 504);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS + 24 - 504);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS + 56 - 504);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS + 120 - 504);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS + 248 - 504);
-  delay(x);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS);
-  delay(x);
-  updateShift(0,0);
+  delay(blinkLength);
+  //updateShift(0,0);
 }
 
+void brakeON() {
+  if (brakeflag == 0) {
+    L_LEDS = L_LEDS + leftBrake;
+    R_LEDS = R_LEDS + rightBrake;
+    updateShift(L_LEDS, R_LEDS);
+    brakeflag = 1;
+  }
+
+  else{
+    L_LEDS = L_LEDS - leftBrake;
+    R_LEDS = R_LEDS - rightBrake;
+    updateShift(L_LEDS, R_LEDS);
+    brakeflag = 0;
+  }
+
+}
 
 void loop() {
-  //Read in pins
-  BRAKE = digitalRead(BRAKE_PIN);
+  //READ PINS
+  //BRAKE = digitalRead(BRAKE_PIN);
   L_TURN = digitalRead(L_TURN_PIN);
   R_TURN = digitalRead(R_TURN_PIN);
   
   //default to periphery lights
   L_LEDS = leftPer;
   R_LEDS = rightPer;
-  //updateShift(L_LEDS,R_LEDS);
-  
-  if(BRAKE == HIGH) {
-    //updateShift(L_LEDS + leftBrake,R_LEDS + rightBrake);
-    L_LEDS = L_LEDS + leftBrake;
-    R_LEDS = R_LEDS + rightBrake;
-  }
+
 
   if(L_TURN == HIGH) {
     runLeft();
