@@ -1,11 +1,13 @@
+#include "Arduino.h"
+#include "PinChangeInterrupt.h"
 
 //PINOUTS
-const int DATA = 10; //Physical Pin 2 
-const int LATCH = 9; //Physical Pin 3
-const int CLK = 8; //Physical Pin 5
-const int R_TURN_PIN = 2; //Physical Pin 11
-const int BRAKE_PIN = 1; //Physical Pin 12
-const int L_TURN_PIN = 0; //Physical Pin 13
+#define DATA  10 //Physical Pin 2 
+#define LATCH  9 //Physical Pin 3
+#define CLK  8 //Physical Pin 5
+#define R_TURN_PIN 2 //Physical Pin 11
+#define BRAKE_PIN  1 //Physical Pin 12
+#define L_TURN_PIN  0 //Physical Pin 13
 
 //PIN STATES
 int R_TURN = 0;
@@ -43,7 +45,7 @@ void setup() {
   pinMode(L_TURN_PIN,INPUT);
 
   //Interrupt for Brakes
-  attachInterrupt(digitalPinToInterrupt(BRAKE_PIN), brakeON, CHANGE);
+  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);
 
   //turn off all leds to signify reset
   updateShift(0,0);
@@ -95,12 +97,10 @@ void calibrateTiming() {
   blinkLength = pulseIn(L_TURN_PIN, HIGH,1000000000); //large number for timeout length in microseconds
 }
 
-void runProgram() {
+void runThrough() {
   int timeDelay = 1000;
   updateShift(14590,5116); //Periph
   delay(timeDelay);
-  //updateShift(126,504); //Left and Right horn
-  //delay(timeDelay);
   runLeft();
   runLeft();
   runLeft();
@@ -129,7 +129,7 @@ void runLeft() {
   delay(blinkLength);
   updateShift(L_LEDS,R_LEDS);
   delay(blinkLength);
-  updateShift(0,0);
+  //updateShift(0,0);
 }
 
 void runRight() {
@@ -148,7 +148,7 @@ void runRight() {
   delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS);
   delay(blinkLength);
-  updateShift(0,0);
+  //updateShift(0,0);
 }
 
 void brakeON() {
