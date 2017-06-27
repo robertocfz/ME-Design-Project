@@ -25,14 +25,13 @@ volatile int R_LEDS = 0;
 //INITIALIZE TIMING VARIABLES
 unsigned long currentMillis = 0;    //milliseconds
 unsigned long previousMillis = 0;   //milliseconds
-unsigned long blinkLength = 75;     //MICROseconds
+unsigned long blinkLength = 75;     //milliseconds
 
 
 //INITIALIZE OTHER VARIABLES
 int brakeflag = 0;
 int brakeCounter = 0;
 int wireConfig = 0;     
-int calibrateWireSuccess = 0;
 
 
 //LIGHTING STATES
@@ -92,11 +91,12 @@ void updateShift(uint16_t left, uint16_t right){
 }
 
 
-void calibrateWiring() {
+int calibrateWiring() {
   //enter calibration if brake is switched 3 times
   //detect 4 or 5 wire configuration
   //do this by checking when the brake pedal is depressed 
   //if both turn signals are on, it is 4 wire. otherwise it is 5
+  int calibrateWireSuccess = 0;
   currentMillis = millis();
 
   while (millis() - currentMillis < 10000) {
@@ -117,12 +117,13 @@ void calibrateWiring() {
       break;
     }
   }
+  return calibrateWireSuccess
 }
 
 
 void calibrateTiming(int PIN) {
   //Calibrate turn signal timing 
-  blinkLength = pulseIn(PIN, HIGH,1000000000); //large number for timeout length in microseconds
+  blinkLength = (pulseIn(PIN, HIGH,1000000000))/1000; //large number for timeout length in milliseconds
 }
 
 
@@ -131,19 +132,19 @@ void runLeft() {
   //Blinks the left side of horns with a delay 
   //126 is value of all horns
   updateShift(L_LEDS - 126,R_LEDS);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS + 64 -126,R_LEDS);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS + 96 - 126,R_LEDS);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS + 112 - 126,R_LEDS);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS + 120 - 126,R_LEDS);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS + 124 - 126,R_LEDS);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS,R_LEDS);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(0,0);
 }
 
@@ -151,19 +152,19 @@ void runRight() {
   //Blinks the right side of horns with a delay 
   //504 is value of all horns
   updateShift(L_LEDS, R_LEDS - 504); 
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS + 8 - 504);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS + 24 - 504);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS + 56 - 504);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS + 120 - 504);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS + 248 - 504);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(L_LEDS ,R_LEDS);
-  delay(blinkLength/1000);
+  delay(blinkLength);
   updateShift(0,0);
 }
 
@@ -174,6 +175,7 @@ void brakeON() {
     R_LEDS = R_LEDS + rightBrake;
     updateShift(L_LEDS, R_LEDS); //might not need this line?
     brakeflag = 1;
+    brakeCounter++;
   }
 
   else{
@@ -191,14 +193,33 @@ void loop() {
   BRAKE = digitalRead(BRAKE_PIN);
   L_TURN = digitalRead(L_TURN_PIN);
   R_TURN = digitalRead(R_TURN_PIN);
-  currentMillis = millis();
+  
 
-  /////////////////////
   //CALIBRATION SECTION
-  //if brake is pressed 3 times within 10 secs of turning on
-  //unsure how to enter calibration
-  //if (millis() < 10000 && //brakeCounter >3) something like that
-  /////////////////////
+  if (millis() < 10000 && BRAKE == HIGH && brakeCounter > 5) {
+    int calibrationFlag = 0;
+    currentMillis = millis();
+
+    while (millis() - currentMillis < 10000) {
+      BRAKE = digitalRead(BRAKE_PIN);
+      L_TURN = digitalRead(L_TURN_PIN);
+      R_TURN = digitalRead(R_TURN_PIN);
+      
+
+      if (BRAKE == HIGH && (L_TURN == HIGH || R_TURN == HIGH)) {
+        if (calibrateWiring() == 1) {
+          if (L_TURN == HIGH) {
+            calibrateTiming(L_TURN_PIN);
+          }
+          else {
+            calibrateTiming(R_TURN_PIN);
+          }
+        }
+       
+      }
+    }
+  }
+
 
   //Periphery lights on as default
   L_LEDS = leftPer;               
