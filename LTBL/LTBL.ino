@@ -117,7 +117,7 @@ int calibrateWiring() {
       break;
     }
   }
-  return calibrateWireSuccess
+  return calibrateWireSuccess;
 }
 
 
