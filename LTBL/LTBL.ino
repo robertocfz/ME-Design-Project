@@ -24,8 +24,8 @@ volatile int R_LEDS = 0;
 
 //INITIALIZE TIMING VARIABLES
 unsigned long currentMillis = 0;    //milliseconds
-unsigned long previousMillis = 0;   //milliseconds
-unsigned long blinkLength = 75;     //milliseconds
+unsigned long blinkLength = 0;      //milliseconds
+int blinkDelay = 75;                //milliseconds
 
 
 //INITIALIZE OTHER VARIABLES
@@ -124,6 +124,7 @@ int calibrateWiring() {
 void calibrateTiming(int PIN) {
   //Calibrate turn signal timing 
   blinkLength = (pulseIn(PIN, HIGH,1000000000))/1000; //large number for timeout length in milliseconds
+  blinkDelay = blinkLength/7;
 }
 
 
@@ -132,19 +133,19 @@ void runLeft() {
   //Blinks the left side of horns with a delay 
   //126 is value of all horns
   updateShift(L_LEDS - 126,R_LEDS);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS + 64 -126,R_LEDS);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS + 96 - 126,R_LEDS);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS + 112 - 126,R_LEDS);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS + 120 - 126,R_LEDS);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS + 124 - 126,R_LEDS);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS,R_LEDS);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(0,0);
 }
 
@@ -152,19 +153,19 @@ void runRight() {
   //Blinks the right side of horns with a delay 
   //504 is value of all horns
   updateShift(L_LEDS, R_LEDS - 504); 
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS + 8 - 504);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS + 24 - 504);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS + 56 - 504);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS + 120 - 504);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS + 248 - 504);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS);
-  delay(blinkLength);
+  delay(blinkDelay);
   updateShift(0,0);
 }
 
