@@ -24,8 +24,10 @@ volatile int R_LEDS = 0;
 
 //INITIALIZE TIMING VARIABLES
 unsigned long currentMillis = 0;    //milliseconds
-unsigned long blinkLength = 525;      //milliseconds. Initialize default period
+unsigned long blinkLength = 525;    //milliseconds. Initialize default period
+unsigned long caliTime = 10000;     //milliseconds
 int blinkDelay = 75;                //milliseconds. Initialize default delay
+
 
 
 //INITIALIZE OTHER VARIABLES
@@ -99,7 +101,7 @@ int calibrateWiring() {
   int calibrateWireSuccess = 0;
   currentMillis = millis();
 
-  while (millis() - currentMillis < 10000) {                  //Timeout after 10 seconds
+  while (millis() - currentMillis < caliTime) {                  //Timeout after 10 seconds
     //read pins
     BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
@@ -109,13 +111,19 @@ int calibrateWiring() {
     if (BRAKE == HIGH && L_TURN == HIGH && R_TURN == HIGH) {
       wireConfig = 4;
       calibrateWireSuccess = 1;
+      updateShift(4,128);
       break;
     }
     else if (BRAKE == HIGH && L_TURN == LOW && R_TURN == LOW) {
       wireConfig = 5;
       calibrateWireSuccess = 1;
+      updateShift(4,128);
       break;
     }
+    
+  }
+  if (calibrateWireSuccess == 0) {
+    updateShift(leftBrake,rightBrake);
   }
   return calibrateWireSuccess;
 }
@@ -126,6 +134,7 @@ void calibrateTiming(int PIN) {
   //Timeout after 10 seconds
   blinkLength = (pulseIn(PIN, HIGH,1000000000))/1000; //large number for timeout length in milliseconds
   blinkDelay = blinkLength/7;
+  updateShift(8,64);
 }
 
 
@@ -198,23 +207,26 @@ void loop() {
   
 
   //CALIBRATION SECTION
-  if (millis() < 10000 && BRAKE == HIGH && brakeCounter > 5) {        //Timeout after 10 seconds
+  if (millis() < caliTime && BRAKE == HIGH && brakeCounter > 5) {        //Timeout after 10 seconds
     int calibrationFlag = 0;
     currentMillis = millis();
+    updateShift(2,256);
 
-    while (millis() - currentMillis < 10000) {
+    while (millis() - currentMillis < caliTime) {
       BRAKE = digitalRead(BRAKE_PIN);
       L_TURN = digitalRead(L_TURN_PIN);
       R_TURN = digitalRead(R_TURN_PIN);
       
-
+      
       if (BRAKE == HIGH && (L_TURN == HIGH || R_TURN == HIGH)) {
         if (calibrateWiring() == 1) {
           if (L_TURN == HIGH) {
             calibrateTiming(L_TURN_PIN);
+            //updateShift(4,64);
           }
-          else {
+          else if (R_TURN == HIGH) {
             calibrateTiming(R_TURN_PIN);
+            //updateShift(8,64);
           }
         }
       }
@@ -232,7 +244,10 @@ void loop() {
     L_LEDS = leftPer;
     R_LEDS = rightPer;
   }
-  
+
+  if(L_TURN == HIGH && R_TURN == HIGH) {
+    //updateShift(L_LEDS + leftBrake , R_LEDS + rightBrake);
+  }
 
   if(L_TURN == HIGH) {
     runLeft();
