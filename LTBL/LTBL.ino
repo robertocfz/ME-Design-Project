@@ -24,8 +24,8 @@ volatile int R_LEDS = 0;
 
 //INITIALIZE TIMING VARIABLES
 unsigned long currentMillis = 0;    //milliseconds
-unsigned long blinkLength = 0;      //milliseconds
-int blinkDelay = 75;                //milliseconds
+unsigned long blinkLength = 525;      //milliseconds. Initialize default period
+int blinkDelay = 75;                //milliseconds. Initialize default delay
 
 
 //INITIALIZE OTHER VARIABLES
@@ -99,7 +99,7 @@ int calibrateWiring() {
   int calibrateWireSuccess = 0;
   currentMillis = millis();
 
-  while (millis() - currentMillis < 10000) {
+  while (millis() - currentMillis < 10000) {                  //Timeout after 10 seconds
     //read pins
     BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
@@ -123,6 +123,7 @@ int calibrateWiring() {
 
 void calibrateTiming(int PIN) {
   //Calibrate turn signal timing 
+  //Timeout after 10 seconds
   blinkLength = (pulseIn(PIN, HIGH,1000000000))/1000; //large number for timeout length in milliseconds
   blinkDelay = blinkLength/7;
 }
@@ -131,7 +132,7 @@ void calibrateTiming(int PIN) {
 
 void runLeft() {
   //Blinks the left side of horns with a delay 
-  //126 is value of all horns
+  //126 is value of all left horn LEDs
   updateShift(L_LEDS - 126,R_LEDS);
   delay(blinkDelay);
   updateShift(L_LEDS + 64 -126,R_LEDS);
@@ -146,12 +147,12 @@ void runLeft() {
   delay(blinkDelay);
   updateShift(L_LEDS,R_LEDS);
   delay(blinkDelay);
-  updateShift(0,0);
+
 }
 
 void runRight() {
   //Blinks the right side of horns with a delay 
-  //504 is value of all horns
+  //504 is value of all right horn LEDs
   updateShift(L_LEDS, R_LEDS - 504); 
   delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS + 8 - 504);
@@ -166,23 +167,23 @@ void runRight() {
   delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS);
   delay(blinkDelay);
-  updateShift(0,0);
+
 }
 
 void brakeON() {
   //Uses interrupt on BRAKE_PIN to switch brake signal
   if (brakeflag == 0) {
+    
     L_LEDS = L_LEDS + leftBrake;
     R_LEDS = R_LEDS + rightBrake;
-    updateShift(L_LEDS, R_LEDS); //might not need this line?
     brakeflag = 1;
     brakeCounter++;
   }
 
   else{
+    
     L_LEDS = L_LEDS - leftBrake;
-    R_LEDS = R_LEDS - rightBrake;
-    updateShift(L_LEDS, R_LEDS); //might not need this line?
+    R_LEDS = R_LEDS - rightBrake;   
     brakeflag = 0;
   }
 
@@ -197,7 +198,7 @@ void loop() {
   
 
   //CALIBRATION SECTION
-  if (millis() < 10000 && BRAKE == HIGH && brakeCounter > 5) {
+  if (millis() < 10000 && BRAKE == HIGH && brakeCounter > 5) {        //Timeout after 10 seconds
     int calibrationFlag = 0;
     currentMillis = millis();
 
@@ -216,15 +217,22 @@ void loop() {
             calibrateTiming(R_TURN_PIN);
           }
         }
-       
       }
     }
   }
 
 
   //Periphery lights on as default
-  L_LEDS = leftPer;               
-  R_LEDS = rightPer;
+  if (brakeflag == 1) {
+    L_LEDS = leftPer + leftBrake;               
+    R_LEDS = rightPer + rightBrake;
+
+  }
+  else {
+    L_LEDS = leftPer;
+    R_LEDS = rightPer;
+  }
+  
 
   if(L_TURN == HIGH) {
     runLeft();
