@@ -24,7 +24,7 @@ volatile int R_LEDS = 0;
 
 //INITIALIZE TIMING VARIABLES
 unsigned long currentMillis = 0;    //milliseconds
-unsigned long blinkLength = 525;    //milliseconds. Initialize default period
+unsigned long blinkPeriod = 525;    //milliseconds. Initialize default period
 unsigned long caliTime = 10000;     //milliseconds
 int blinkDelay = 75;                //milliseconds. Initialize default delay
 
@@ -34,6 +34,7 @@ int blinkDelay = 75;                //milliseconds. Initialize default delay
 int brakeflag = 0;
 int brakeCounter = 0;
 int wireConfig = 0;     
+int hazardflag = 0;
 
 
 //LIGHTING STATES
@@ -132,8 +133,8 @@ int calibrateWiring() {
 void calibrateTiming(int PIN) {
   //Calibrate turn signal timing 
   //Timeout after 10 seconds
-  blinkLength = (pulseIn(PIN, HIGH,1000000000))/1000; //large number for timeout length in milliseconds
-  blinkDelay = blinkLength/7;
+  blinkPeriod = (pulseIn(PIN, HIGH,1000000000))/1000; //large number for timeout length in milliseconds
+  blinkDelay = blinkPeriod/7;
   updateShift(8,64);
 }
 
@@ -177,6 +178,22 @@ void runRight() {
   updateShift(L_LEDS ,R_LEDS);
   delay(blinkDelay);
 
+}
+
+void hazardLights() { 
+
+  while (L_TURN == R_TURN) {
+    BRAKE = digitalRead(BRAKE_PIN);
+    L_TURN = digitalRead(L_TURN_PIN);
+    R_TURN = digitalRead(R_TURN_PIN);
+
+    if (L_TURN == HIGH && R_TURN == HIGH) {
+      updateShift(leftPer + leftBrake, rightPer + rightBrake);
+      delay(blinkPeriod);
+      updateShift(0,0);
+      delay(blinkPeriod);
+    }
+  }
 }
 
 void brakeON() {
@@ -245,13 +262,15 @@ void loop() {
     R_LEDS = rightPer;
   }
 
+  //HAZARD LIGHTS
   if(L_TURN == HIGH && R_TURN == HIGH) {
-    //updateShift(L_LEDS + leftBrake , R_LEDS + rightBrake);
-  }
+    hazardLights();
+    }
 
   if(L_TURN == HIGH) {
     runLeft();
   }
+  
   if(R_TURN == HIGH) {
     runRight();
   }
