@@ -49,6 +49,9 @@ void setup() {
   EEPROM.put(1,rightHorn);
   eepromValue = EEPROM.get(1,rightHorn);
   updateShift(0,eepromValue);
+
+  delay(1000);
+  updateShift(0,0);
 }
 
 void updateShift(uint16_t left, uint16_t right){

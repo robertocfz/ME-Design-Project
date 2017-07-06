@@ -24,9 +24,9 @@ volatile int R_LEDS = 0;
 
 //INITIALIZE TIMING VARIABLES
 unsigned long currentMillis = 0;    //milliseconds
-unsigned long blinkPeriod = 525;    //milliseconds. Initialize default period
+unsigned long blinkPeriod = 525;    //milliseconds. Blinking Period
 unsigned long caliTime = 10000;     //milliseconds
-int blinkDelay = 75;                //milliseconds. Initialize default delay
+int blinkDelay = 75;                //milliseconds. Delay between segment blinks
 
 
 
@@ -143,17 +143,17 @@ void calibrateTiming(int PIN) {
 void runLeft() {
   //Blinks the left side of horns with a delay 
   //126 is value of all left horn LEDs
-  updateShift(L_LEDS - 126,R_LEDS);
+  updateShift(L_LEDS - leftHorn,R_LEDS);
   delay(blinkDelay);
-  updateShift(L_LEDS + 64 -126,R_LEDS);
+  updateShift(L_LEDS + 64 -leftHorn,R_LEDS);
   delay(blinkDelay);
-  updateShift(L_LEDS + 96 - 126,R_LEDS);
+  updateShift(L_LEDS + 96 - leftHorn,R_LEDS);
   delay(blinkDelay);
-  updateShift(L_LEDS + 112 - 126,R_LEDS);
+  updateShift(L_LEDS + 112 - leftHorn,R_LEDS);
   delay(blinkDelay);
-  updateShift(L_LEDS + 120 - 126,R_LEDS);
+  updateShift(L_LEDS + 120 - leftHorn,R_LEDS);
   delay(blinkDelay);
-  updateShift(L_LEDS + 124 - 126,R_LEDS);
+  updateShift(L_LEDS + 124 - leftHorn,R_LEDS);
   delay(blinkDelay);
   updateShift(L_LEDS,R_LEDS);
   delay(blinkDelay);
@@ -163,17 +163,17 @@ void runLeft() {
 void runRight() {
   //Blinks the right side of horns with a delay 
   //504 is value of all right horn LEDs
-  updateShift(L_LEDS, R_LEDS - 504); 
+  updateShift(L_LEDS, R_LEDS - rightHorn); 
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + 8 - 504);
+  updateShift(L_LEDS ,R_LEDS + 8 - rightHorn);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + 24 - 504);
+  updateShift(L_LEDS ,R_LEDS + 24 - rightHorn);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + 56 - 504);
+  updateShift(L_LEDS ,R_LEDS + 56 - rightHorn);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + 120 - 504);
+  updateShift(L_LEDS ,R_LEDS + 120 - rightHorn);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + 248 - 504);
+  updateShift(L_LEDS ,R_LEDS + 248 - rightHorn);
   delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS);
   delay(blinkDelay);
