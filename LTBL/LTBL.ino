@@ -4,6 +4,7 @@
 //LIBRARIES
 #include "Arduino.h"
 #include "PinChangeInterrupt.h"
+#include <EEPROM.h>
 
 //PINOUTS
 #define DATA  10        //Physical Pin 2 
@@ -23,18 +24,20 @@ volatile int R_LEDS = 0;
 
 
 //INITIALIZE TIMING VARIABLES
-unsigned long currentMillis = 0;    //milliseconds
+unsigned long savedMillis = 0;    //milliseconds
 unsigned long blinkPeriod = 525;    //milliseconds. Blinking Period
-unsigned long caliTime = 10000;     //milliseconds
+unsigned long caliTime = 10000;     //milliseconds  Calibration mode timeout
 int blinkDelay = 75;                //milliseconds. Delay between segment blinks
 
 
 
 //INITIALIZE OTHER VARIABLES
 int brakeflag = 0;
-int brakeCounter = 0;
-int wireConfig = 0;     
+int isFourWire = 1;     
 int hazardflag = 0;
+int caliWiringSuccess = 0;
+int caliTimingSuccess = 0;
+
 
 
 //LIGHTING STATES
@@ -94,50 +97,80 @@ void updateShift(uint16_t left, uint16_t right){
 }
 
 
-int calibrateWiring() {
-  //enter calibration if brake is switched 3 times
+void calibrateWiring() {
   //detect 4 or 5 wire configuration
   //do this by checking when the brake pedal is depressed 
   //if both turn signals are on, it is 4 wire. otherwise it is 5
-  int calibrateWireSuccess = 0;
-  currentMillis = millis();
+  int isFourWire = EEPROM.read(0);    //0th block of memory isFourWire
 
-  while (millis() - currentMillis < caliTime) {                  //Timeout after 10 seconds
-    //read pins
+  savedMillis = millis();
+  while ((millis() - savedMillis) < caliTime && BRAKE == HIGH) {                  //Timeout after 10 seconds
+    //READ PINS
     BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
     R_TURN = digitalRead(R_TURN_PIN);
-    currentMillis = millis();           //for timeout exits
 
-    if (BRAKE == HIGH && L_TURN == HIGH && R_TURN == HIGH) {
-      wireConfig = 4;
-      calibrateWireSuccess = 1;
-      updateShift(4,128);
-      break;
+    if (BRAKE == HIGH && L_TURN == HIGH && R_TURN == HIGH) {    //4 Wire 
+      if (isFourWire != 1) {      //If the current calibration is NOT 4 wire, change to 4 wire
+        EEPROM.write(0,1);        //Write to 0th memory block that isFourWire = True
+        updateShift(4,128);
+        caliWiringSuccess = 1;
+        break;
+      }
+      
     }
-    else if (BRAKE == HIGH && L_TURN == LOW && R_TURN == LOW) {
-      wireConfig = 5;
-      calibrateWireSuccess = 1;
-      updateShift(4,128);
-      break;
+    if (BRAKE == HIGH && L_TURN == LOW && R_TURN == LOW) {    //5 Wire 
+      if (isFourWire != 0) {      //If the current calibration is NOT 5 wire, change to 5 wire
+        EEPROM.write(0,0);        //Write to 0th memory block that isFourWire = False
+        updateShift(4,128);
+        caliWiringSuccess = 1;
+        break;
+      }
     }
-    
   }
-  if (calibrateWireSuccess == 0) {
-    updateShift(leftBrake,rightBrake);
-  }
-  return calibrateWireSuccess;
 }
 
 
 void calibrateTiming(int PIN) {
   //Calibrate turn signal timing 
-  //Timeout after 10 seconds
-  blinkPeriod = (pulseIn(PIN, HIGH,1000000000))/1000; //large number for timeout length in milliseconds
-  blinkDelay = blinkPeriod/7;
-  updateShift(8,64);
-}
+  //Timeout after 10 seconds (see pulseIn line)
+  int storedTiming = EEPROM.read(1);    //1st block of memory is for blinker timing in milliseconds
 
+  savedMillis = millis();
+  while ((millis() - savedMillis) < caliTimeout && BRAKE == HIGH && caliTimingSuccess == 0) {
+    BRAKE = digitalRead(BRAKE_PIN);
+    L_TURN = digitalRead(L_TURN_PIN);
+    R_TURN = digitalRead(R_TURN_PIN);
+
+    if (isFourWire == 1) {
+      if (L_TURN == HIGH) {
+        //Times signal pulse in microseconds, divide to get milliseconds. 
+        blinkPeriod = (int) (pulseIn(PIN, HIGH,1000000000))/1000; //Timeout of 10 seconds
+        
+        if (blinkPeriod != 0) {
+          caliTimingSuccess = 1;
+        }
+      }
+    }
+
+    if (isFourWire == 0) {
+      if (R_TURN == HIGH) {
+        //Times signal pulse in microseconds, divide to get milliseconds. 
+        blinkPeriod = (int) (pulseIn(PIN, HIGH,1000000000))/1000; //Timeout of 10 seconds
+       
+        if (blinkPeriod != 0) {
+          caliTimingSuccess = 1;
+        }
+      }
+    }
+
+  //If stored value is more than 25 milliseconds difference
+  if (abs(blinkPeriod - storedTiming) > 25 && caliTimingSuccess == 1) {   
+    EEPROM.write(1,blinkPeriod);                //Store new timing in 1st address
+    blinkDelay = blinkPeriod/7;                   //Delay for horn run sequence
+    updateShift(8,64);
+  }
+}
 
 
 void runLeft() {
@@ -157,7 +190,6 @@ void runLeft() {
   delay(blinkDelay);
   updateShift(L_LEDS,R_LEDS);
   delay(blinkDelay);
-
 }
 
 void runRight() {
@@ -177,13 +209,12 @@ void runRight() {
   delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS);
   delay(blinkDelay);
-
 }
 
 void hazardLights() { 
 
   while (L_TURN == R_TURN) {
-    BRAKE = digitalRead(BRAKE_PIN);
+    //BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
     R_TURN = digitalRead(R_TURN_PIN);
 
@@ -203,7 +234,6 @@ void brakeON() {
     L_LEDS = L_LEDS + leftBrake;
     R_LEDS = R_LEDS + rightBrake;
     brakeflag = 1;
-    brakeCounter++;
   }
 
   else{
@@ -212,9 +242,11 @@ void brakeON() {
     R_LEDS = R_LEDS - rightBrake;   
     brakeflag = 0;
   }
-
 }
 
+
+
+//MAIN LOOP. RUNS INFINIETLY
 void loop() {
 
   //READ PINS
@@ -223,35 +255,34 @@ void loop() {
   R_TURN = digitalRead(R_TURN_PIN);
   
 
-  //CALIBRATION SECTION
-  if (millis() < caliTime && BRAKE == HIGH && brakeCounter > 5) {        //Timeout after 10 seconds
-    int calibrationFlag = 0;
-    currentMillis = millis();
+  //ENTER CALIBRATION 
+  if (millis() < 500 && BRAKE == HIGH) {        //Brake must be held down when key on 500 ms leniency 
+    savedMillis = millis();                   //Get current time processor has been on
     updateShift(2,256);
 
-    while (millis() - currentMillis < caliTime) {
+    //CALIBRATION LOOP
+    while ((millis() - savedMillis) < caliTime && BRAKE == HIGH) {    //While less than 10s AND brake is pressed
+      
+      //WIRING CALIRATION
+      if (caliWiringSuccess == 0){
+        calibrateWiring();
+      }
+
+      //TIMING CALIBRATION
+      if (caliTimingSuccess == 0) {
+        calibrateTiming();
+      }
+
       BRAKE = digitalRead(BRAKE_PIN);
-      L_TURN = digitalRead(L_TURN_PIN);
-      R_TURN = digitalRead(R_TURN_PIN);
-      
-      
-      if (BRAKE == HIGH && (L_TURN == HIGH || R_TURN == HIGH)) {
-        if (calibrateWiring() == 1) {
-          if (L_TURN == HIGH) {
-            calibrateTiming(L_TURN_PIN);
-            //updateShift(4,64);
-          }
-          else if (R_TURN == HIGH) {
-            calibrateTiming(R_TURN_PIN);
-            //updateShift(8,64);
-          }
-        }
+
+      if (caliWiringSuccess == 1 && caliTimingSuccess == 1) {
+        break;
       }
     }
   }
 
 
-  //Periphery lights on as default
+  //DEFAULT LIGHTING IS PERIPHERY
   if (brakeflag == 1) {
     L_LEDS = leftPer + leftBrake;               
     R_LEDS = rightPer + rightBrake;
@@ -262,20 +293,44 @@ void loop() {
     R_LEDS = rightPer;
   }
 
-  //HAZARD LIGHTS
-  if(L_TURN == HIGH && R_TURN == HIGH) {
-    hazardLights();
+
+
+  //FOUR WIRE SECTION
+  if (isFourWire == 1) {
+
+    if (L_TURN == HIGH && R_TURN == HIGH && BRAKE == LOW) {   //HAZARD LIGHTS
+      hazardLights();
     }
 
-  if(L_TURN == HIGH) {
-    runLeft();
-  }
-  
-  if(R_TURN == HIGH) {
-    runRight();
+    if (L_TURN == HIGH && BRAKE == LOW) {   //THIS IS FLAWED! What if you brake first then signal?! 
+      runLeft();
+    }
+
+    if (R_TURN == HIGH && BRAKE == LOW) {
+      runRight();
+    }
   }
 
-  updateShift(L_LEDS,R_LEDS);
+
+
+  //FIVE WIRE SECTION
+  else {
+
+    if (L_TURN == HIGH && R_TURN == HIGH) {   //HAZARD LIGHTS
+      hazardLights();
+    }
+
+    if (L_TURN == HIGH) {
+      runLeft();
+    }
+    
+    if (R_TURN == HIGH) {
+      runRight();
+    }
+  }
+
+
+  updateShift(L_LEDS,R_LEDS);   //OUTPUT PERIPHERY OR BRAKE LIGHTS
   }
   
 
