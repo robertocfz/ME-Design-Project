@@ -24,9 +24,10 @@ volatile int R_LEDS = 0;
 
 
 //INITIALIZE TIMING VARIABLES
-unsigned long savedMillis = 0;    //milliseconds
+unsigned long savedMillis = 0;      //milliseconds
 unsigned long blinkPeriod = 525;    //milliseconds. Blinking Period
-unsigned long caliTime = 10000;     //milliseconds  Calibration mode timeout
+unsigned long caliTimeout = 10000;     //milliseconds. Calibration mode timeout
+unsigned long timeSigOn = 0;        //milliseconds. Used to determine if signal is blinking
 int blinkDelay = 75;                //milliseconds. Delay between segment blinks
 
 
@@ -37,6 +38,9 @@ int isFourWire = 1;
 int hazardflag = 0;
 int caliWiringSuccess = 0;
 int caliTimingSuccess = 0;
+int signalflag = 0;
+bool BLINKING = false;
+unsigned long signalCount = 0;
 
 
 
@@ -61,6 +65,8 @@ void setup() {
 
   //INTIALIZE BRAKE INTERRUPT
   attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);
+  attachPCINT(digitalPinToPCINT(L_TURN_PIN),signalOn, CHANGE);   //change to rising for more effiency
+  attachPCINT(digitalPinToPCINT(R_TURN_PIN), signalOn, CHANGE);
 
   //RESET BLINK
   updateShift(0,0);
@@ -104,7 +110,7 @@ void calibrateWiring() {
   int isFourWire = EEPROM.read(0);    //0th block of memory isFourWire
 
   savedMillis = millis();
-  while ((millis() - savedMillis) < caliTime && BRAKE == HIGH) {                  //Timeout after 10 seconds
+  while ((millis() - savedMillis) < caliTimeout && BRAKE == HIGH) {                  //Timeout after 10 seconds
     //READ PINS
     BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
@@ -131,7 +137,7 @@ void calibrateWiring() {
 }
 
 
-void calibrateTiming(int PIN) {
+void calibrateTiming() {
   //Calibrate turn signal timing 
   //Timeout after 10 seconds (see pulseIn line)
   int storedTiming = EEPROM.read(1);    //1st block of memory is for blinker timing in milliseconds
@@ -143,25 +149,32 @@ void calibrateTiming(int PIN) {
     R_TURN = digitalRead(R_TURN_PIN);
 
     if (isFourWire == 1) {
-      if (L_TURN == HIGH) {
+      if (L_TURN == HIGH && isBlinking() == true) {   //susecptable to issues...check this later
         //Times signal pulse in microseconds, divide to get milliseconds. 
-        blinkPeriod = (int) (pulseIn(PIN, HIGH,1000000000))/1000; //Timeout of 10 seconds
-        
-        if (blinkPeriod != 0) {
-          caliTimingSuccess = 1;
-        }
+        blinkPeriod = (int) (pulseIn(L_TURN_PIN, HIGH,1000000000))/1000; //Timeout of 10 seconds **might not need cast int
       }
+
+      if (R_TURN == HIGH && isBlinking() == true) {   //susecptable to issues...check this later
+        //Times signal pulse in microseconds, divide to get milliseconds. 
+        blinkPeriod = (int) (pulseIn(R_TURN_PIN, HIGH,1000000000))/1000; //Timeout of 10 seconds
+      }
+
+
     }
 
     if (isFourWire == 0) {
+      if (L_TURN == HIGH) {
+        //Times signal pulse in microseconds, divide to get milliseconds. 
+        blinkPeriod = (int) (pulseIn(L_TURN_PIN, HIGH,1000000000))/1000; //Timeout of 10 seconds
+      }
       if (R_TURN == HIGH) {
         //Times signal pulse in microseconds, divide to get milliseconds. 
-        blinkPeriod = (int) (pulseIn(PIN, HIGH,1000000000))/1000; //Timeout of 10 seconds
-       
-        if (blinkPeriod != 0) {
-          caliTimingSuccess = 1;
-        }
+        blinkPeriod = (int) (pulseIn(R_TURN_PIN, HIGH,1000000000))/1000; //Timeout of 10 seconds
       }
+    }
+
+    if (blinkPeriod != 0 && blinkPeriod < 3000) {     //If period is non-zero (error in pulseIn) and does not exceed 3s
+      caliTimingSuccess = 1;
     }
 
   //If stored value is more than 25 milliseconds difference
@@ -169,6 +182,7 @@ void calibrateTiming(int PIN) {
     EEPROM.write(1,blinkPeriod);                //Store new timing in 1st address
     blinkDelay = blinkPeriod/7;                   //Delay for horn run sequence
     updateShift(8,64);
+  }
   }
 }
 
@@ -228,6 +242,7 @@ void hazardLights() {
 }
 
 void brakeON() {
+  //INTERRUPT
   //Uses interrupt on BRAKE_PIN to switch brake signal
   if (brakeflag == 0) {
     
@@ -245,6 +260,32 @@ void brakeON() {
 }
 
 
+void signalOn() {
+  //INTERRUPT
+  //Uses interrupt on L_TURN_PIN and R_TURN_PIN to time signal on
+
+  if (signalflag == 0) {        //If signal was off, it's about to turn on
+    timeSigOn = millis();       //Time when it started
+    signalflag = 1;             //The signal is now on
+  }
+
+  if (signalflag == 1) {        //If signal was on, it's about to turn off
+    signalflag = 0;             //The signal is now off
+  }
+}
+
+
+bool isBlinking() {
+  //Used to check if the lights are blinking or solid
+  if ((millis() - timeSigOn) > (blinkPeriod + 25)) {
+    BLINKING = false;
+  }
+  else {
+    BLINKING = true;
+  }
+  return BLINKING;
+}
+
 
 //MAIN LOOP. RUNS INFINIETLY
 void loop() {
@@ -253,15 +294,15 @@ void loop() {
   BRAKE = digitalRead(BRAKE_PIN);
   L_TURN = digitalRead(L_TURN_PIN);
   R_TURN = digitalRead(R_TURN_PIN);
-  
+
 
   //ENTER CALIBRATION 
-  if (millis() < 500 && BRAKE == HIGH) {        //Brake must be held down when key on 500 ms leniency 
+  if (millis() < 500 && BRAKE == HIGH) {      //Brake must be held down when key on 500 ms leniency 
     savedMillis = millis();                   //Get current time processor has been on
     updateShift(2,256);
 
     //CALIBRATION LOOP
-    while ((millis() - savedMillis) < caliTime && BRAKE == HIGH) {    //While less than 10s AND brake is pressed
+    while ((millis() - savedMillis) < caliTimeout && BRAKE == HIGH) {    //While less than 10s AND brake is pressed
       
       //WIRING CALIRATION
       if (caliWiringSuccess == 0){
@@ -288,6 +329,7 @@ void loop() {
     R_LEDS = rightPer + rightBrake;
 
   }
+  
   else {
     L_LEDS = leftPer;
     R_LEDS = rightPer;
@@ -298,15 +340,15 @@ void loop() {
   //FOUR WIRE SECTION
   if (isFourWire == 1) {
 
-    if (L_TURN == HIGH && R_TURN == HIGH && BRAKE == LOW) {   //HAZARD LIGHTS
+    if (L_TURN == HIGH && R_TURN == HIGH && isBlinking() == true) {   //HAZARD LIGHTS
       hazardLights();
     }
 
-    if (L_TURN == HIGH && BRAKE == LOW) {   //THIS IS FLAWED! What if you brake first then signal?! 
+    if (L_TURN == HIGH && isBlinking() == true) {   //THIS IS FLAWED! What if you brake first then signal?! 
       runLeft();
     }
 
-    if (R_TURN == HIGH && BRAKE == LOW) {
+    if (R_TURN == HIGH && isBlinking() == true) {
       runRight();
     }
   }
