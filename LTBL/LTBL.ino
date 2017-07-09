@@ -29,6 +29,7 @@ unsigned long blinkPeriod = 525;        //milliseconds. Blinking Period
 unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
 unsigned long leftSigTime = 0;          //milliseconds. Used to determine if signal is blinking
 unsigned long rightSigTime = 0;         //milliseconds. Used to determine if signal is blinking
+unsigned long brakeTime = 0;            //milliseconds. Used to time how long the brakes have been on
 int blinkDelay = 75;                    //milliseconds. Delay between segment blinks
 
 
@@ -159,12 +160,12 @@ void calibrateTiming() {
     R_TURN = digitalRead(R_TURN_PIN);
 
     if (isFourWire == true) {
-      if (L_TURN == HIGH && isBlinking(L_TURN_PIN) == true) {   //susecptable to issues...check this later
+      if (L_TURN == HIGH && isBlinking() == true) {   //susecptable to issues...check this later
         //Times signal pulse in microseconds, divide to get milliseconds. 
         blinkPeriod = (int) (pulseIn(L_TURN_PIN, HIGH,1000000000))/1000; //Timeout of 10 seconds **might not need cast int
       }
 
-      if (R_TURN == HIGH && isBlinking(R_TURN_PIN) == true) {   //susecptable to issues...check this later
+      if (R_TURN == HIGH && isBlinking() == true) {   //susecptable to issues...check this later
         //Times signal pulse in microseconds, divide to get milliseconds. 
         blinkPeriod = (int) (pulseIn(R_TURN_PIN, HIGH,1000000000))/1000; //Timeout of 10 seconds
       }
@@ -254,6 +255,8 @@ void hazardLights() {
 void brakeON() {
   //INTERRUPT
   //Uses interrupt on BRAKE_PIN to switch brake signal
+  brakeTime = millis();
+
   if (brakeflag == false) {
     
     L_LEDS = L_LEDS + leftBrake;
@@ -304,27 +307,31 @@ void rightSignalOn() {
   */
 }
 
-bool isBlinking(int PIN) {
+bool isBlinking() {
   //Used to check if the lights are blinking or solid
   //Only used in 4 Wire
 
-  if (L_TURN == HIGH && R_TURN == LOW) {                //LEFT TURN
+  //I think this has a flaw in the logic...please look over the conditions
+
+  if (L_TURN == HIGH && R_TURN == LOW && (millis() - leftSigTime) < (blinkPeriod + 25)) {                      //LEFT TURN
     BLINKING == true;
   }
 
-  else if (L_TURN == LOW && R_TURN == HIGH) {           //RIGHT TURN
+  else if (L_TURN == LOW && R_TURN == HIGH && (millis() - rightSigTime) < (blinkPeriod + 25)) {                //RIGHT TURN
     BLINKING == true;
   }
 
-  else if ((millis() - leftSigTime) < (blinkPeriod + 25) && BRAKE == LOW && PIN == L_TURN_PIN) {           //HAZARD LIGHTS
+  else if ((millis() - leftSigTime) < (blinkPeriod + 25) && (millis() - rightSigTime) < (blinkPeriod + 25)) {  //HAZARD LIGHTS
+    //might cause weird interaction with brakes
     BLINKING = true;
   }
 
-  else if ((millis() - rightSigTime) < (blinkPeriod + 25) && BRAKE == LOW && PIN == R_TURN_PIN) {           //HAZARD LIGHTS
-    BLINKING = true;
-  }
   else {
     BLINKING = false;
+  }
+
+  if ((millis() - brakeTime) > blinkPeriod) {
+    BLINKING = true;        //I THINK?!
   }
   return BLINKING;
 }
@@ -383,15 +390,15 @@ void loop() {
   //FOUR WIRE SECTION
   if (isFourWire == true) {
 
-    if (L_TURN == HIGH && R_TURN == HIGH && isBlinking(L_TURN_PIN) == true && isBlinking(R_TURN_PIN)) {   //HAZARD LIGHTS
+    if (L_TURN == HIGH && R_TURN == HIGH && isBlinking() == true) {   //HAZARD LIGHTS
       hazardLights();
     }
 
-    if (L_TURN == HIGH && isBlinking(L_TURN_PIN) == true) {   //THIS IS FLAWED! What if you brake first then signal?! 
+    if (L_TURN == HIGH && isBlinking() == true) {   //THIS IS FLAWED! What if you brake first then signal?! 
       runLeft();
     }
 
-    if (R_TURN == HIGH && isBlinking(R_TURN_PIN) == true) {
+    if (R_TURN == HIGH && isBlinking() == true) {
       runRight();
     }
   }
