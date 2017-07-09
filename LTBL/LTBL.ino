@@ -24,22 +24,23 @@ volatile int R_LEDS = 0;
 
 
 //INITIALIZE TIMING VARIABLES
-unsigned long savedMillis = 0;      //milliseconds
-unsigned long blinkPeriod = 525;    //milliseconds. Blinking Period
-unsigned long caliTimeout = 10000;     //milliseconds. Calibration mode timeout
-unsigned long leftSigTime = 0;        //milliseconds. Used to determine if signal is blinking
-unsigned long rightSigTime = 0;       //milliseconds. Used to determine if signal is blinking
-int blinkDelay = 75;                //milliseconds. Delay between segment blinks
+unsigned long savedMillis = 0;          //milliseconds
+unsigned long blinkPeriod = 525;        //milliseconds. Blinking Period
+unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
+unsigned long leftSigTime = 0;          //milliseconds. Used to determine if signal is blinking
+unsigned long rightSigTime = 0;         //milliseconds. Used to determine if signal is blinking
+int blinkDelay = 75;                    //milliseconds. Delay between segment blinks
 
 
 
-//INITIALIZE OTHER VARIABLES
+//INITIALIZE BOOLEANS
 bool brakeflag = false;
-bool isFourWire = true;         //default 4 wire standard in US     
-bool caliWiringSuccess = false;
-bool caliTimingSuccess = false;
-bool signalflag = false;
-bool BLINKING = false;
+bool isFourWire = true;                 //Default 4 wire standard in US     
+bool caliWiringSuccess = false;         //Calibration Flag for Wiring
+bool caliTimingSuccess = false;         //Calibration Flag for Signal Timing
+bool leftSignalFlag = false;            //Flag that the left signal is on
+bool rightSignalFlag = false;           //Flag that the right signal is on    
+bool BLINKING = false;                  //Flag that shows if the signal is blinking
 
 
 //LIGHTING STATES
@@ -74,8 +75,8 @@ void setup() {
 
   //INTIALIZE BRAKE INTERRUPT
   attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);
-  attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, CHANGE);   //change to rising for more effiency
-  attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, CHANGE);
+  attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, RISING);   //change to rising for more effiency
+  attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, RISING);
 
   //RESET BLINK
   updateShift(0,0);
@@ -119,7 +120,7 @@ void calibrateWiring() {
   int isFourWire = EEPROM.read(0);    //0th block of memory isFourWire
 
   savedMillis = millis();
-  while ((millis() - savedMillis) < caliTimeout && BRAKE == HIGH) {                  //Timeout after 10 seconds
+  while ((millis() - savedMillis) < caliTimeout && BRAKE == HIGH) {      //Timeout after 10 seconds
     //READ PINS
     BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
@@ -127,7 +128,7 @@ void calibrateWiring() {
 
     if (BRAKE == HIGH && L_TURN == HIGH && R_TURN == HIGH) {    //4 Wire 
       if (isFourWire != true) {      //If the current calibration is NOT 4 wire, change to 4 wire
-        EEPROM.write(0,1);        //Write to 0th memory block that isFourWire = True
+        EEPROM.write(0,1);           //Write to 0th memory block that isFourWire = True
         updateShift(4,128);
         caliWiringSuccess = true;
         break;
@@ -136,7 +137,7 @@ void calibrateWiring() {
     }
     if (BRAKE == HIGH && L_TURN == LOW && R_TURN == LOW) {    //5 Wire 
       if (isFourWire != false) {      //If the current calibration is NOT 5 wire, change to 5 wire
-        EEPROM.write(0,0);        //Write to 0th memory block that isFourWire = False
+        EEPROM.write(0,0);            //Write to 0th memory block that isFourWire = False
         updateShift(4,128);
         caliWiringSuccess = true;
         break;
@@ -189,7 +190,7 @@ void calibrateTiming() {
   //If stored value is more than 25 milliseconds difference
   if (abs(blinkPeriod - storedTiming) > 25 && caliTimingSuccess == true) {   
     EEPROM.write(1,blinkPeriod);                //Store new timing in 1st address
-    blinkDelay = blinkPeriod/7;                   //Delay for horn run sequence
+    blinkDelay = blinkPeriod/7;                 //Delay for horn run sequence
     updateShift(8,64);
   }
   }
@@ -272,29 +273,35 @@ void brakeON() {
 void leftSignalOn() {
   //INTERRUPT
   //Uses interrupt on L_TURN_PIN and R_TURN_PIN to time signal on
-
-  if (signalflag == false) {       //If signal was off, it's about to turn on
-    leftSigTime = millis();        //Time when it started
-    signalflag = true;             //The signal is now on
+  //Maybe runLeft()? Would this conflict with hazard sequence?
+  leftSigTime = millis();
+  /*
+  if (leftSignalFlag == false) {       //If signal was off, it's about to turn on
+    leftSigTime = millis();            //Time when it started
+    leftSignalFlag = true;             //The signal is now on
   }
 
-  if (signalflag == true) {        //If signal was on, it's about to turn off
-    signalflag = false;            //The signal is now off
+  if (leftSignalFlag == true) {        //If signal was on, it's about to turn off
+    leftSignalFlag = false;            //The signal is now off
   }
+  */
 }
 
 void rightSignalOn() {
   //INTERRUPT
   //Uses interrupt on L_TURN_PIN and R_TURN_PIN to time signal on
   
-  if (signalflag == false) {       //If signal was off, it's about to turn on
-    rightSigTime = millis();       //Time when it started
-    signalflag = true;             //The signal is now on
+  rightSigTime = millis();
+  /*
+  if (rightSignalFlag == false) {       //If signal was off, it's about to turn on
+    rightSigTime = millis();            //Time when it started
+    rightSignalFlag = true;             //The signal is now on
   }
 
-  if (signalflag == true) {        //If signal was on, it's about to turn off
-    signalflag = false;            //The signal is now off
+  if (rightSignalFlag == true) {        //If signal was on, it's about to turn off
+    rightSignalFlag = false;            //The signal is now off
   }
+  */
 }
 
 bool isBlinking(int PIN) {
