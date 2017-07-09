@@ -315,15 +315,15 @@ bool isBlinking() {
     BLINKING = true;
   }
 
-  else if (BRAKE == HIGH && (currentTime - brakeTime) > (blinkPeriod + leniency) {
+  else if (BRAKE == HIGH && (currentTime - brakeTime) > (blinkPeriod + leniency)) {
   	BLINKING = true;														 //IF BRAKE HELD LONGER THAN BLINKPERIOD 
   }																			 //IT IS BLINKING!
   
-  else if (BRAKE == HIGH && ((currentTime - rightSigTime) > (currentTime - leftSigTime) && (currentTime - leftSigTime) < (blinkPeriod + leniency)) {
+  else if (BRAKE == HIGH && (currentTime - rightSigTime) > (currentTime - leftSigTime) && (currentTime - leftSigTime) < (blinkPeriod + leniency)) {
   	BLINKING = true;														 //BRAKING AND LEFT TURN
   }
 
-  else if (BRAKE == HIGH && ((currentTime - leftSigTime) > (currentTime - rightSigTime) && (currentTime - rightSigTime) < (blinkPeriod + leniency)) {
+  else if (BRAKE == HIGH && (currentTime - leftSigTime) > (currentTime - rightSigTime) && (currentTime - rightSigTime) < (blinkPeriod + leniency)) {
   	BLINKING = true;														 //BRAKING AND LEFT TURN
   }
 
