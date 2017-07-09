@@ -128,7 +128,7 @@ void calibrateWiring() {
 
     if (BRAKE == HIGH && L_TURN == HIGH && R_TURN == HIGH) {    //4 Wire 
       if (isFourWire != true) {      //If the current calibration is NOT 4 wire, change to 4 wire
-        EEPROM.write(0,1);           //Write to 0th memory block that isFourWire = True
+        EEPROM.write(0,true);           //Write to 0th memory block that isFourWire = True
         updateShift(4,128);
         caliWiringSuccess = true;
         break;
@@ -137,7 +137,7 @@ void calibrateWiring() {
     }
     if (BRAKE == HIGH && L_TURN == LOW && R_TURN == LOW) {    //5 Wire 
       if (isFourWire != false) {      //If the current calibration is NOT 5 wire, change to 5 wire
-        EEPROM.write(0,0);            //Write to 0th memory block that isFourWire = False
+        EEPROM.write(0,false);            //Write to 0th memory block that isFourWire = False
         updateShift(4,128);
         caliWiringSuccess = true;
         break;
