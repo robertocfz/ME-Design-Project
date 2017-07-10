@@ -121,24 +121,24 @@ void calibrateWiring() {
   //detect 4 or 5 wire configuration
   //do this by checking when the brake pedal is depressed 
   //if both turn signals are on, it is 4 wire. otherwise it is 5
-  int isFourWire = EEPROM.read(0);    //0th block of memory isFourWire
+  bool isFourWire = EEPROM.read(0);    //0th block of memory isFourWire
 
   stopWatch = millis();				  //Reset timer for calibration mode
-  while ((millis() - stopWatch) < caliTimeout && BRAKE == HIGH) {      //Timeout after 10 seconds
+  while ((millis() - stopWatch) < caliTimeout && BRAKE == HIGH && caliWiringSuccess == false) {      //Timeout after 10 seconds
     //READ PINS
     BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
     R_TURN = digitalRead(R_TURN_PIN);
 
     if (BRAKE == HIGH && L_TURN == HIGH && R_TURN == HIGH) {    //4 Wire 
-      if (isFourWire != true) {      	//If the current calibration is NOT 4 wire, change to 4 wire
+      if (isFourWire != true) {       	//If the current calibration is NOT 4 wire, change to 4 wire
         EEPROM.write(0,true);           //Write to 0th memory block that isFourWire = True
         updateShift(4,128);
         caliWiringSuccess = true;
         break;
       }
       else {
-      	caliWiringSuccess = true;		//Current calibration is already Four Wire, good check!
+      	caliWiringSuccess = true;		    //Current calibration is already Four Wire, good check!
       	break;
       }
     }
@@ -150,7 +150,7 @@ void calibrateWiring() {
         break;
       }
       else {
-      	caliWiringSuccess = true;		//Current calibration is already Five Wire, good check!
+      	caliWiringSuccess = true;		    //Current calibration is already Five Wire, good check!
       	break;
       }
     }
@@ -193,13 +193,13 @@ void calibrateTiming() {
     }
 
     if (blinkPeriod != 0 && blinkPeriod < 3000) {     //If period is non-zero (error in pulseIn) and does not exceed 3s
-      caliTimingSuccess = true;						  //Just a quick sanity check
+      caliTimingSuccess = true;						            //Just a quick sanity check
     }
 
   //If stored value is more than 25 milliseconds difference
   if (abs(blinkPeriod - storedTiming) > 25 && caliTimingSuccess == true) {   
-    EEPROM.write(1,blinkPeriod);                //Store new timing in 1st address
-    blinkDelay = blinkPeriod/7;                 //New delay for horn run sequence
+    EEPROM.write(1,blinkPeriod);                     //Store new timing in 1st address
+    blinkDelay = blinkPeriod/7;                      //New delay for horn run sequence
     updateShift(8,64);
   }
   }
