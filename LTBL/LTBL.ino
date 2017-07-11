@@ -382,18 +382,29 @@ void loop() {
 
 
   //DEFAULT LIGHTING IS PERIPHERY
-  if (brakeflag == true) {							//This case should prevent blinking when brake is held down
-    L_LEDS = leftPer + leftBrake;           	    //L_LEDS will be a container that we can add to to light up different sections
+  if (brakeflag == true) {							    //This case should prevent blinking when brake is held down
+    L_LEDS = leftPer + leftBrake;           //L_LEDS will be a container that we can add to to light up different sections
     R_LEDS = rightPer + rightBrake;					//R_LEDS will be a container that we can add to to light up different sections
+
+  }
+
+  else {
+    L_LEDS = leftPer;								        //L_LEDS will be a container that we can add to to light up different sections
+    R_LEDS = rightPer;								      //R_LEDS will be a container that we can add to to light up different sections
+  }
+
+
+  //DEFAULT LIGHTING IS PERIPHERY
+  if (brakeflag == true) {              
+    L_LEDS = leftPer + leftBrake;              
+    R_LEDS = rightPer + rightBrake;         
 
   }
   
   else {
-    L_LEDS = leftPer;								//L_LEDS will be a container that we can add to to light up different sections
-    R_LEDS = rightPer;								//R_LEDS will be a container that we can add to to light up different sections
+    L_LEDS = leftPer;               
+    R_LEDS = rightPer;               
   }
-
-
 
   //FOUR WIRE SECTION
   if (isFourWire == true) {
@@ -403,11 +414,11 @@ void loop() {
     }
 
     if (L_TURN == HIGH && isBlinking() == true) {   
-      //runLeft();
+      runLeft();
     }
 
     if (R_TURN == HIGH && isBlinking() == true) {
-      //runRight();
+      runRight();
     }
   }
 
