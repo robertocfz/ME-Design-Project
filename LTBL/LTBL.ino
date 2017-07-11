@@ -214,41 +214,43 @@ void calibrateTiming() {
 
 void runLeft() {
   //Blinks the left side of horns with a delay 
-  updateShift(L_LEDS - leftHorn,R_LEDS);
-  delay(blinkDelay);
-  updateShift(L_LEDS + L1 -leftHorn,R_LEDS);
-  delay(blinkDelay);
-  updateShift(L_LEDS + L2 - leftHorn,R_LEDS);
-  delay(blinkDelay);
-  updateShift(L_LEDS + L3 - leftHorn,R_LEDS);
-  delay(blinkDelay);
-  updateShift(L_LEDS + L4 - leftHorn,R_LEDS);
-  delay(blinkDelay);
-  updateShift(L_LEDS + L5 - leftHorn,R_LEDS);
-  delay(blinkDelay);
+  L_LEDS = L_LEDS - leftHorn;
   updateShift(L_LEDS,R_LEDS);
+  delay(blinkDelay);
+  updateShift(L_LEDS + L1, R_LEDS);
+  delay(blinkDelay);
+  updateShift(L_LEDS + L2, R_LEDS);
+  delay(blinkDelay);
+  updateShift(L_LEDS + L3, R_LEDS);
+  delay(blinkDelay);
+  updateShift(L_LEDS + L4, R_LEDS);
+  delay(blinkDelay);
+  updateShift(L_LEDS + L5, R_LEDS);
+  delay(blinkDelay);
+  updateShift(L_LEDS, R_LEDS);
   delay(blinkDelay);
 }
 
 void runRight() {
   //Blinks the right side of horns with a delay 
-  updateShift(L_LEDS, R_LEDS - rightHorn); 
+  R_LEDS = R_LEDS - rightHorn;
+  updateShift(L_LEDS, R_LEDS); 
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + R1 - rightHorn);
+  updateShift(L_LEDS ,R_LEDS + R1);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + R2 - rightHorn);
+  updateShift(L_LEDS ,R_LEDS + R2);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + R3 - rightHorn);
+  updateShift(L_LEDS ,R_LEDS + R3);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + R4 - rightHorn);
+  updateShift(L_LEDS ,R_LEDS + R4);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + R5 - rightHorn);
+  updateShift(L_LEDS ,R_LEDS + R5);
   delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS);
   delay(blinkDelay);
 }
 
-void hazardLights() { 
+void emergencyFlashers() { 
 
   while (L_TURN == HIGH && R_TURN == HIGH) {
     if (L_TURN == HIGH && R_TURN == HIGH) {
@@ -397,7 +399,7 @@ void loop() {
   if (isFourWire == true) {
 
     if (L_TURN == HIGH && R_TURN == HIGH && isBlinking() == true) {   //HAZARD LIGHTS
-      hazardLights();
+      emergencyFlashers();
     }
 
     if (L_TURN == HIGH && isBlinking() == true) {   
@@ -415,7 +417,7 @@ void loop() {
   else {
 
     if (L_TURN == HIGH && R_TURN == HIGH) {   //HAZARD LIGHTS
-      hazardLights();
+      emergencyFlashers();
     }
 
     if (L_TURN == HIGH) {
