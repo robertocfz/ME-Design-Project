@@ -1,14 +1,14 @@
-const int buttonPin1 = 6; // Left signal
-const int buttonPin2 = 7; // Right signal
-const int buttonPin3 = 8; // Brake signal
+const int leftIn = 6; // Left signal
+const int rightIn = 7; // Right signal
+const int brakeIn = 8; // Brake signal
 
-const int pwmOutput1 = 3; // Left signal, PWM output
-const int digitalOutput1 = 4; // Brake signal, digital output
-const int pwmOutput2 = 5; // Right signal, PWM output
+const int leftOut = 3; // Left signal, PWM output
+const int brakeOut = 4; // Brake signal, digital output
+const int rightOut = 5; // Right signal, PWM output
 
-int buttonStatus1;
-int buttonStatus2;
-int buttonStatus3;
+int LEFT;
+int RIGHT;
+int BRAKE;
 
 // Base frequencies are divided by a provided divisor.
 // The base frequency for pins 3, 9, 10, and 11 is 31250 Hz.
@@ -50,45 +50,45 @@ void setPWMFrequency(int pin, int divisor) {
 }
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
-  pinMode(buttonPin1, INPUT); // digital pin 6
-  pinMode(buttonPin2, INPUT); // digital pin 7
-  pinMode(buttonPin3, INPUT); // digital pin 8
+  pinMode(leftIn, INPUT); // digital pin 6
+  pinMode(rightIn, INPUT); // digital pin 7
+  pinMode(brakeIn, INPUT); // digital pin 8
   //pinMode(buttonPin4, INPUT); // digital pin 9
   
-  pinMode(pwmOutput1, OUTPUT); // digital pin 3
-  pinMode(digitalOutput1, OUTPUT); // digital pin 4
-  pinMode(pwmOutput2, OUTPUT); // digital pin 5
+  pinMode(leftOut, OUTPUT); // digital pin 3
+  pinMode(brakeOut, OUTPUT); // digital pin 4
+  pinMode(rightOut, OUTPUT); // digital pin 5
   }
 
 void loop() {
-  buttonStatus1 = digitalRead(buttonPin1);
-  buttonStatus2 = digitalRead(buttonPin2);
-  buttonStatus3 = digitalRead(buttonPin3);
+  LEFT = digitalRead(leftIn);
+  RIGHT = digitalRead(rightIn);
+  BRAKE = digitalRead(brakeIn);
   
-  setPWMFrequency(pwmOutput1, 31250); // Pin 3, 1 Hz/1 second period
-  setPWMFrequency(pwmOutput2, 62500); // Pin 5, 1 Hz/1 second period
+  setPWMFrequency(leftOut, 31250); // Pin 3, 1 Hz/1 second period
+  setPWMFrequency(rightOut, 62500); // Pin 5, 1 Hz/1 second period
  
-  if (buttonStatus1 == HIGH) // Left signal PWM output (50% duty cycle) on pin 3
+  if (LEFT == HIGH) // Left signal PWM output (50% duty cycle) on pin 3
   {
-    analogWrite(pwmOutput1, 127);
+    analogWrite(leftOut, 127);
     //delay(1000);
-    //analogWrite(pwmOutput1,0);
+    //analogWrite(leftOut,0);
   }
-  else if (buttonStatus2 == HIGH) // Right signal PWM output (50% duty cycle) on pin 5
+  else if (RIGHT == HIGH) // Right signal PWM output (50% duty cycle) on pin 5
   {
-    analogWrite(pwmOutput2, 127);
+    analogWrite(rightOut, 127);
     //delay(1000);
-    //analogWrite(pwmOutput2,0);
+    //analogWrite(rightOut,0);
   }
-  else if (buttonStatus3 == HIGH) // Brake signal output on pin 4
+  else if (BRAKE == HIGH) // Brake signal output on pin 4
   {
-      while (buttonStatus3 == HIGH)
+      while (BRAKE == HIGH)
       {
-        analogWrite(digitalOutput1, HIGH);
-        buttonStatus1 = digitalRead(buttonPin1);
+        digitalWrite(brakeOut, HIGH);
+        LEFT = digitalRead(leftIn);
       }
-      digitalWrite(digitalOutput1, LOW);
+      digitalWrite(brakeOut, LOW);
   }
 }
