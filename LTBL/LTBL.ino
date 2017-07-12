@@ -30,7 +30,6 @@ unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
 unsigned long leftSigTime = 0;          //milliseconds. Used to determine if signal is blinking
 unsigned long rightSigTime = 0;         //milliseconds. Used to determine if signal is blinking
 unsigned long brakeTime = 0;            //milliseconds. Used to time how long the brakes have been on
-unsigned long currentTime = 0;		    	//milliseconds. Used for isBlinking() function
 int blinkDelay = 75;                    //milliseconds. Delay between segment blinks
 int leniency = 25;					          	//milliseconds. Leniency in blinkPeriod length for logical checks
 
@@ -75,6 +74,10 @@ void setup() {
   pinMode(R_TURN_PIN,INPUT);
   pinMode(BRAKE_PIN,INPUT);
   pinMode(L_TURN_PIN,INPUT);
+
+  if (digitalRead(BRAKE_PIN) == HIGH) {                                   
+    brakeflag = true;
+  }
 
   //INTIALIZE BRAKE INTERRUPT
   attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);				    	//Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
@@ -307,7 +310,11 @@ bool isBlinking() {
   //This is where the magic logic comes into play for all 4 wire complexities
 
   //I think this has a flaw in the logic...please look over the conditions
-  currentTime = millis();
+  unsigned long currentTime = millis();
+  unsigned long brakeStopwatch = currentTime - brakeTime;
+  unsigned long leftStopwatch = currentTime - leftSigTime;
+  unsigned long rightStopwatch = currentTime - rightSigTime;
+  unsigned long blinkLeniency = blinkPeriod + leniency;
 
   if (BRAKE == LOW && L_TURN == HIGH && R_TURN == LOW) {                     //BAISC LEFT TURN
     BLINKING == true;
@@ -321,19 +328,19 @@ bool isBlinking() {
     BLINKING = true;
   }
 
-  else if (BRAKE == HIGH && (currentTime - brakeTime) > (blinkPeriod + leniency)) {
+  else if (BRAKE == HIGH && brakeStopwatch > blinkLeniency) {
   	BLINKING = true;														 //IF BRAKE HELD LONGER THAN BLINKPERIOD 
   }																        			 //IT IS BLINKING!
   
-  else if (BRAKE == HIGH && (currentTime - rightSigTime) > (currentTime - leftSigTime) && (currentTime - leftSigTime) < (blinkPeriod + leniency)) {
+  else if (BRAKE == HIGH && rightStopwatch > leftStopwatch && leftStopwatch < blinkLeniency) {
   	BLINKING = true;														 //BRAKING AND LEFT TURN
   }
 
-  else if (BRAKE == HIGH && (currentTime - leftSigTime) > (currentTime - rightSigTime) && (currentTime - rightSigTime) < (blinkPeriod + leniency)) {
+  else if (BRAKE == HIGH && leftStopwatch > rightStopwatch && rightStopwatch < blinkLeniency) {
   	BLINKING = true;														 //BRAKING AND LEFT TURN
   }
 
-  else if (BRAKE == HIGH && (currentTime - leftSigTime) - (currentTime - rightSigTime) < leniency) {
+  else if (BRAKE == HIGH && leftStopwatch - rightStopwatch < leniency) {
   	BLINKING = true;														 //BRAKING AND HAZARDS
   }
 
@@ -393,18 +400,6 @@ void loop() {
     R_LEDS = rightPer;								      //R_LEDS will be a container that we can add to to light up different sections
   }
 
-
-  //DEFAULT LIGHTING IS PERIPHERY
-  if (brakeflag == true) {              
-    L_LEDS = leftPer + leftBrake;              
-    R_LEDS = rightPer + rightBrake;         
-
-  }
-  
-  else {
-    L_LEDS = leftPer;               
-    R_LEDS = rightPer;               
-  }
 
   //FOUR WIRE SECTION
   if (isFourWire == true) {
