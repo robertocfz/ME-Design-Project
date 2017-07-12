@@ -77,13 +77,13 @@ void setup() {
   pinMode(L_TURN_PIN,INPUT);
 
   //INTIALIZE BRAKE INTERRUPT
-  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);					//Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
+  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);				    	//Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
   attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, RISING);				//Attaching interrupt for L_TURN_PIN. Calls leftSignalOn on RISING EDGE   
   attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, RISING);			//Attaching interrupt for R_TURN_PIN. Calls rightSignalOn on RISING EDGE
 
 
   //READ EEPROM
-  isFourWire = EEPROM.read(0);            //Reading EEPROM for wire calibration data
+  isFourWire = EEPROM.read(0);           //Reading EEPROM for wire calibration data
   blinkPeriod = EEPROM.read(1);          //Reading EEPROM for timing calibration data
   blinkDelay = blinkPeriod/7;
   
@@ -205,7 +205,7 @@ void calibrateTiming() {
   if (abs(newTime - blinkPeriod) > 25 && caliTimingSuccess == true) {   
     EEPROM.write(1,newTime);                     //Store new timing in 1st address
     blinkPeriod = newTime;
-    blinkDelay = blinkPeriod/7;                      //New delay for horn run sequence
+    blinkDelay = blinkPeriod/7;                  //New delay for horn run sequence
     updateShift(8,64);
   }
   }
@@ -317,13 +317,13 @@ bool isBlinking() {
     BLINKING == true;
   }
 
-  else if (BRAKE == LOW && L_TURN == HIGH && R_TURN == HIGH) {  			 //BASIC HAZARD LIGHTS
+  else if (BRAKE == LOW && L_TURN == HIGH && R_TURN == HIGH) {  			       //BASIC HAZARD LIGHTS
     BLINKING = true;
   }
 
   else if (BRAKE == HIGH && (currentTime - brakeTime) > (blinkPeriod + leniency)) {
   	BLINKING = true;														 //IF BRAKE HELD LONGER THAN BLINKPERIOD 
-  }																			 //IT IS BLINKING!
+  }																        			 //IT IS BLINKING!
   
   else if (BRAKE == HIGH && (currentTime - rightSigTime) > (currentTime - leftSigTime) && (currentTime - leftSigTime) < (blinkPeriod + leniency)) {
   	BLINKING = true;														 //BRAKING AND LEFT TURN
@@ -356,7 +356,7 @@ void loop() {
 
   //ENTER CALIBRATION 
   if (millis() < 100 && BRAKE == HIGH) {      //Brake must be held down when key on 500 ms leniency 
-    stopWatch = millis();                   //Get current time processor has been on
+    stopWatch = millis();                     //Get current time processor has been on
     updateShift(2,256);
 
     //CALIBRATION LOOP
