@@ -18,7 +18,7 @@
 //PIN STATES
 int R_TURN = 0;
 int L_TURN = 0;
-volatile int BRAKE = 0;
+int BRAKE = 0;
 volatile int L_LEDS = 0;
 volatile int R_LEDS = 0;
 
@@ -76,14 +76,14 @@ isFourWire = false; //testing 5 wire
   pinMode(BRAKE_PIN,INPUT);
   pinMode(L_TURN_PIN,INPUT);
 
-  if (digitalRead(BRAKE_PIN) == HIGH) {                                   
-    brakeflag = true;
-  }
+  // if (digitalRead(BRAKE_PIN) == HIGH) {                                   
+  //   brakeflag = true;
+  // }
 
   //INTIALIZE BRAKE INTERRUPT
   attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);				    	//Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
-  //attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, RISING);				//Attaching interrupt for L_TURN_PIN. Calls leftSignalOn on RISING EDGE   
-  //attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, RISING);			//Attaching interrupt for R_TURN_PIN. Calls rightSignalOn on RISING EDGE
+  attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, RISING);				//Attaching interrupt for L_TURN_PIN. Calls leftSignalOn on RISING EDGE   
+  attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, RISING);			//Attaching interrupt for R_TURN_PIN. Calls rightSignalOn on RISING EDGE
 
 
   //READ EEPROM
@@ -126,7 +126,7 @@ void updateShift(uint16_t left, uint16_t right) {
     
    digitalWrite(LATCH,HIGH);
 }
-/*
+
 
 void calibrateWiring() {
   //detect 4 or 5 wire configuration
@@ -216,7 +216,7 @@ void calibrateTiming() {
   }
   }
 }
-*/
+
 
 void runLeft() {
   //Blinks the left side of horns with a delay 
@@ -238,17 +238,17 @@ void runLeft() {
 
 void runRight() {
   //Blinks the right side of horns with a delay 
-  updateShift(L_LEDS, R_LEDS); 
+  updateShift(L_LEDS, R_LEDS - rightHorn); 
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + R1);
+  updateShift(L_LEDS ,R_LEDS - rightHorn + R1);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + R2);
+  updateShift(L_LEDS ,R_LEDS - rightHorn + R2);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + R3);
+  updateShift(L_LEDS ,R_LEDS - rightHorn + R3);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + R4);
+  updateShift(L_LEDS ,R_LEDS - rightHorn + R4);
   delay(blinkDelay);
-  updateShift(L_LEDS ,R_LEDS + R5);
+  updateShift(L_LEDS ,R_LEDS - rightHorn + R5);
   delay(blinkDelay);
   updateShift(L_LEDS ,R_LEDS);
   delay(blinkDelay);
@@ -273,33 +273,31 @@ void emergencyFlashers() {
 void brakeON() {
   //INTERRUPT
   //Uses interrupt on BRAKE_PIN to switch brake signal
+ 
  /*
-  L_LEDS = L_LEDS + leftBrake;
-  R_LEDS = R_LEDS + rightBrake;
-  //updateShift(L_LEDS,R_LEDS);
-  //brakeTime = millis();
-*/
+  L_LEDS = leftPer + leftBrake;
+  R_LEDS = rightPer + rightBrake;
+  brakeTime = millis();
+  */
 
-  
   if (brakeflag == false) {
     
-    L_LEDS = L_LEDS + leftBrake;
-    R_LEDS = R_LEDS + rightBrake;
-    updateShift(L_LEDS, R_LEDS);
+    L_LEDS = leftPer + leftBrake;
+    R_LEDS = rightPer + rightBrake;
     brakeTime = millis();
     brakeflag = true;
   }
 
   else{
     
-    L_LEDS = L_LEDS - leftBrake;
-    R_LEDS = R_LEDS - rightBrake;   
+    L_LEDS = leftPer;
+    R_LEDS = rightPer;   
     brakeflag = false;
   }
   
 }
 
-/*
+
 void leftSignalOn() {
   //INTERRUPT
   //Uses interrupt on L_TURN_PIN and R_TURN_PIN to time signal on
@@ -361,96 +359,96 @@ bool isBlinking() {
   return BLINKING;
 }
 
-*/
+
 
 //MAIN LOOP. RUNS INFINIETLY
 void loop() {
 
-  //READ PINS
+  //READ PINS 
   BRAKE = digitalRead(BRAKE_PIN);
   L_TURN = digitalRead(L_TURN_PIN);
   R_TURN = digitalRead(R_TURN_PIN);
 
+/*
+  //ENTER CALIBRATION 
+  if (millis() < 100 && BRAKE == HIGH) {      //Brake must be held down when key on 500 ms leniency 
+    stopWatch = millis();                     //Get current time processor has been on
+    updateShift(2,256);
+    delay(3000);
 
-  // //ENTER CALIBRATION 
-  // if (millis() < 100 && BRAKE == HIGH) {      //Brake must be held down when key on 500 ms leniency 
-  //   stopWatch = millis();                     //Get current time processor has been on
-  //   updateShift(2,256);
-  //   delay(3000);
-
-  //   //CALIBRATION LOOP
-  //   while ((millis() - stopWatch) < caliTimeout && BRAKE == HIGH) {    //While less than 10s AND brake is pressed
+    //CALIBRATION LOOP
+    while ((millis() - stopWatch) < caliTimeout && BRAKE == HIGH) {    //While less than 10s AND brake is pressed
       
-  //     //WIRING CALIRATION
-  //     if (caliWiringSuccess == false){
-  //       calibrateWiring();
-  //     }
+      //WIRING CALIRATION
+      if (caliWiringSuccess == false){
+        calibrateWiring();
+      }
 
-  //     //TIMING CALIBRATION
-  //     if (caliTimingSuccess == false) {
-  //       calibrateTiming();
-  //     }
+      //TIMING CALIBRATION
+      if (caliTimingSuccess == false) {
+        calibrateTiming();
+      }
 
-  //     BRAKE = digitalRead(BRAKE_PIN);
+      BRAKE = digitalRead(BRAKE_PIN);
 
-  //     if (caliWiringSuccess == true && caliTimingSuccess == true) {
-  //       break;			//All calibrated and ready to roll
-  //     }
-  //   }
-  // }
-
-
-  //DEFAULT LIGHTING IS PERIPHERY
-  if (BRAKE == HIGH) {							    //This case should prevent blinking when brake is held down
-    L_LEDS = leftPer + leftBrake;           //L_LEDS will be a container that we can add to to light up different sections
-    R_LEDS = rightPer + rightBrake;					//R_LEDS will be a container that we can add to to light up different sections
-
+      if (caliWiringSuccess == true && caliTimingSuccess == true) {
+        break;			//All calibrated and ready to roll
+      }
+    }
   }
 
-  else {
-    L_LEDS = leftPer;								        //L_LEDS will be a container that we can add to to light up different sections
-    R_LEDS = rightPer;								      //R_LEDS will be a container that we can add to to light up different sections
-  }
+*/
 
 /*
-
   //FOUR WIRE SECTION
   if (isFourWire == true) {
 
-    if (L_TURN == HIGH && R_TURN == HIGH && isBlinking() == true) {   //HAZARD LIGHTS
+    if (L_TURN == HIGH && R_TURN == HIGH && isBlinking() == true) {   //EMERGENCY FLASHERS
       emergencyFlashers();
     }
 
-    if (L_TURN == HIGH && isBlinking() == true) {   
+    if (L_TURN == HIGH && isBlinking() == true) {                     //LEFT SIGNAL
       runLeft();
     }
 
-    if (R_TURN == HIGH && isBlinking() == true) {
+    if (R_TURN == HIGH && isBlinking() == true) {                     //RIGHT SIGNAL
       runRight();
     }
   }
 
 
-*/
-  //FIVE WIRE SECTION
-//  else {
 
-    if (L_TURN == HIGH && R_TURN == HIGH) {   //HAZARD LIGHTS
+  //FIVE WIRE SECTION
+ else {
+*/
+    if (L_TURN == HIGH && R_TURN == HIGH) {   //EMERGENCY FLASHERS
       emergencyFlashers();
     }
 
-    if (L_TURN == HIGH) {
+    if (L_TURN == HIGH) {                     //LEFT SIGNAL
       runLeft();
     }
     
-    if (R_TURN == HIGH) {
+    if (R_TURN == HIGH) {                     //RIGHT SIGNAL
       runRight();
     }
+  
 
-  //}
+  //DEFAULT LIGHTING IS PERIPHERY
+  if (BRAKE == HIGH) {                      //This case should prevent blinking when brake is held down
+    L_LEDS = leftPer + leftBrake;           //L_LEDS will be a container that we can add to to light up different sections
+    R_LEDS = rightPer + rightBrake;         //R_LEDS will be a container that we can add to to light up different sections
+//    updateShift(2,64);
+//    delay(2000);
+  }
 
+  else {
+    L_LEDS = leftPer;                       //L_LEDS will be a container that we can add to to light up different sections
+    R_LEDS = rightPer;                      //R_LEDS will be a container that we can add to to light up different sections
+  }
 
   updateShift(L_LEDS,R_LEDS);   //OUTPUT PERIPHERY OR BRAKE LIGHTS
+   
   }
   
 
