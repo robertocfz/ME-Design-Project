@@ -82,8 +82,8 @@ isFourWire = false; //testing 5 wire
 
   //INTIALIZE BRAKE INTERRUPT
   attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);				    	//Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
-  attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, RISING);				//Attaching interrupt for L_TURN_PIN. Calls leftSignalOn on RISING EDGE   
-  attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, RISING);			//Attaching interrupt for R_TURN_PIN. Calls rightSignalOn on RISING EDGE
+//  attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, RISING);				//Attaching interrupt for L_TURN_PIN. Calls leftSignalOn on RISING EDGE   
+//  attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, RISING);			//Attaching interrupt for R_TURN_PIN. Calls rightSignalOn on RISING EDGE
 
 
   //READ EEPROM
@@ -127,7 +127,7 @@ void updateShift(uint16_t left, uint16_t right) {
    digitalWrite(LATCH,HIGH);
 }
 
-
+/*
 void calibrateWiring() {
   //detect 4 or 5 wire configuration
   //do this by checking when the brake pedal is depressed 
@@ -217,7 +217,7 @@ void calibrateTiming() {
   }
 }
 
-
+*/
 void runLeft() {
   //Blinks the left side of horns with a delay 
   updateShift(L_LEDS - leftHorn,R_LEDS);
