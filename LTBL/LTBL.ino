@@ -11,7 +11,7 @@
 #define LATCH  9        //Physical Pin 3
 #define CLK  8          //Physical Pin 5
 #define R_TURN_PIN 2    //Physical Pin 11
-#define BRAKE_PIN  1    //Physical Pin 12
+//#define BRAKE_PIN  1    //Physical Pin 12
 #define L_TURN_PIN  0   //Physical Pin 13
 
 
@@ -21,10 +21,14 @@ int L_TURN = 0;
 int BRAKE = 0;
 volatile int L_LEDS = 0;
 volatile int R_LEDS = 0;
+int previousL_LEDS = 0;
+int previousR_LEDS = 0;
+int BRAKE_PIN = 1;
 
 
 //INITIALIZE TIMING VARIABLES
 unsigned long calibrationStopWatch = 0; //milliseconds. Used for calibration timing
+unsigned long currentTime = 0;
 unsigned long blinkPeriod = 525;        //milliseconds. Blinking Period
 unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
 unsigned long leftSigTime = 0;          //milliseconds. Used to determine if signal is blinking
@@ -49,6 +53,7 @@ bool BLINKING = false;                  //Flag that shows if the signal is blink
 const int leftHorn = 126;
 const int leftPer = 14590;
 const int leftBrake = 1792;
+const int leftPerBrake = 16382;
 const int L1 = 64;
 const int L2 = 96;
 const int L3 = 112;
@@ -57,6 +62,7 @@ const int L5 = 124;
 const int rightHorn = 504;
 const int rightPer = 5116;
 const int rightBrake = 3074;
+const int rightPerBrake = 8190;
 const int R1 = 8;
 const int R2 = 24;
 const int R3 = 56;
@@ -81,7 +87,8 @@ isFourWire = false; //testing 5 wire
   }
 
   //INTIALIZE BRAKE INTERRUPT
-  //attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);				    	//Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
+  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, RISING);				    	//Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
+  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeOFF, FALLING);
 //  attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, RISING);				//Attaching interrupt for L_TURN_PIN. Calls leftSignalOn on RISING EDGE   
 //  attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, RISING);			//Attaching interrupt for R_TURN_PIN. Calls rightSignalOn on RISING EDGE
 
@@ -220,7 +227,7 @@ void calibrateTiming() {
 */
 void runLeft() {
   //Blinks the left side of horns with a delay 
-  updateShift(L_LEDS - leftHorn,R_LEDS);
+  updateShift(L_LEDS - leftHorn, R_LEDS);
   delay(blinkDelay);
   updateShift(L_LEDS - leftHorn + L1, R_LEDS);
   delay(blinkDelay);
@@ -259,7 +266,7 @@ void emergencyFlashers() {
 
   while (L_TURN == HIGH && R_TURN == HIGH) {
     if (L_TURN == HIGH && R_TURN == HIGH) {
-      updateShift(leftPer + leftBrake, rightPer + rightBrake);
+      updateShift(leftPerBrake, rightPerBrake);
       delay(blinkPeriod);
       updateShift(0,0);
       delay(blinkPeriod);
@@ -274,17 +281,18 @@ void brakeON() {
   //INTERRUPT
   //Uses interrupt on BRAKE_PIN to switch brake signal
  
- /*
+ 
   //for use if RISING interrupt instead of CHANGE
-  L_LEDS = leftPer + leftBrake;
-  R_LEDS = rightPer + rightBrake;
-  brakeTime = millis();
-  */
-
+  L_LEDS = leftPerBrake;
+  R_LEDS = rightPerBrake;
+ 
+  //brakeTime = millis();
+  
+/*
   if (brakeflag == false) {
     
-    L_LEDS = leftPer + leftBrake;
-    R_LEDS = rightPer + rightBrake;
+    L_LEDS = leftPerBrake;
+    R_LEDS = rightPerBrake;
     //brakeTime = millis();
     brakeflag = true;
   }
@@ -295,7 +303,15 @@ void brakeON() {
     R_LEDS = rightPer;   
     brakeflag = false;
   }
-  
+ */ 
+}
+
+void brakeOFF() {
+  //INTERRUPT
+
+  L_LEDS = leftPer;
+  R_LEDS = rightPer;
+
 }
 
 /*
@@ -369,6 +385,8 @@ void loop() {
   BRAKE = digitalRead(BRAKE_PIN);
   L_TURN = digitalRead(L_TURN_PIN);
   R_TURN = digitalRead(R_TURN_PIN);
+  currentTime = millis();
+
 
 /*
   //ENTER CALIBRATION 
@@ -436,20 +454,33 @@ void loop() {
   
 
   //DEFAULT LIGHTING IS PERIPHERY
-  if (BRAKE == HIGH) {                      //This case should prevent blinking when brake is held down
-    L_LEDS = leftPer + leftBrake;           //L_LEDS will be a container that we can add to to light up different sections
-    R_LEDS = rightPer + rightBrake;         //R_LEDS will be a container that we can add to to light up different sections
+  if (BRAKE == HIGH) {               //This case should prevent blinking when brake is held down
+    L_LEDS = leftPerBrake;           //L_LEDS will be a container that we can add to to light up different sections
+    R_LEDS = rightPerBrake;          //R_LEDS will be a container that we can add to to light up different sections
   }
 
   else {
     L_LEDS = leftPer;                       //L_LEDS will be a container that we can add to to light up different sections
     R_LEDS = rightPer;                      //R_LEDS will be a container that we can add to to light up different sections
   }
-
-  while (digitalRead(BRAKE_PIN) == HIGH) {
-    updateShift(2,256);
+/*
+  while ((BRAKE) == HIGH) {
+    //updateShift(2,256);
+    updateShift(L_LEDS,R_LEDS);
+    BRAKE = digitalRead(BRAKE_PIN);
   }
+*/
+  /*
+  if ((previousL_LEDS != L_LEDS || previousR_LEDS != R_LEDS) && millis() != currentTime) {
+    updateShift(L_LEDS,R_LEDS);
+    previousL_LEDS = L_LEDS;
+    previousR_LEDS = R_LEDS;
+
+  }
+*/
+
   updateShift(L_LEDS,R_LEDS);               //OUTPUT PERIPHERY OR BRAKE LIGHTS
+
   }
   
 
