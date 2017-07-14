@@ -81,7 +81,7 @@ isFourWire = false; //testing 5 wire
   }
 
   //INTIALIZE BRAKE INTERRUPT
-  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);				    	//Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
+  //attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);				    	//Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
 //  attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, RISING);				//Attaching interrupt for L_TURN_PIN. Calls leftSignalOn on RISING EDGE   
 //  attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, RISING);			//Attaching interrupt for R_TURN_PIN. Calls rightSignalOn on RISING EDGE
 
@@ -285,7 +285,7 @@ void brakeON() {
     
     L_LEDS = leftPer + leftBrake;
     R_LEDS = rightPer + rightBrake;
-    brakeTime = millis();
+    //brakeTime = millis();
     brakeflag = true;
   }
 
@@ -446,8 +446,10 @@ void loop() {
     R_LEDS = rightPer;                      //R_LEDS will be a container that we can add to to light up different sections
   }
 
+  while (digitalRead(BRAKE_PIN) == HIGH) {
+    updateShift(2,256);
+  }
   updateShift(L_LEDS,R_LEDS);               //OUTPUT PERIPHERY OR BRAKE LIGHTS
-   
   }
   
 
