@@ -1,23 +1,21 @@
 const int leftIn = 7;
 const int rightIn = 8;
-//const int brakeIn = 9;
 const int brakeIn4wire = 9;
 const int brakeIn5wire = 10;
 const int hazardsIn = 11;
 
 const int leftOut = 2;
 const int rightOut = 3;
-const int brakeOut = 4;
-const int hazardsOut = 5;
-
+const int brakeOut4wire = 4;
+const int brakeOut5wire = 5;
+const int hazardsOut = 6;
 
 unsigned long previousMillisLeft = 0;
 unsigned long previousMillisRight = 0;
 unsigned long previousMillisHazards = 0;
 
-const long interval = 500;
+const long interval = 150;
 
-//int BRAKE;
 int BRAKE4wire;
 int BRAKE5wire;
 
@@ -36,14 +34,14 @@ void setup()
   
   pinMode(leftIn, INPUT);
   pinMode(rightIn, INPUT);
-  //pinMode(brakeIn, INPUT);
   pinMode(brakeIn4wire, INPUT);
   pinMode(brakeIn5wire, INPUT);
   pinMode(hazardsIn, INPUT);
   
   pinMode(leftOut, OUTPUT);
   pinMode(rightIn, INPUT);
-  pinMode(brakeOut, OUTPUT);
+  pinMode(brakeOut4wire, OUTPUT);
+  pinMode(brakeOut5wire, OUTPUT);
   pinMode(hazardsOut, OUTPUT);
 
 }
@@ -53,7 +51,6 @@ void loop()
   RIGHT = digitalRead(rightIn);  
   LEFT = digitalRead(leftIn);
   HAZARDS = digitalRead(hazardsIn);
-  //BRAKE = digitalRead(brakeIn);
   BRAKE4wire = digitalRead(brakeIn4wire);
   BRAKE5wire = digitalRead(brakeIn5wire);
 
@@ -62,25 +59,21 @@ void loop()
   // 5 WIRE BRAKE SIGNAL
   if (BRAKE5wire == HIGH) 
   {
-    digitalWrite(brakeOut, HIGH);
+    digitalWrite(brakeOut5wire, HIGH);
   }
   else
   {
-    digitalWrite(brakeOut, LOW);
+    digitalWrite(brakeOut5wire, LOW);
   }
 
   // 4 WIRE BRAKE SIGNAL
   if (BRAKE4wire == HIGH) 
   {
-    digitalWrite(brakeOut, HIGH);
-    digitalWrite(leftOut, HIGH);
-    digitalWrite(rightOut, HIGH);
+    digitalWrite(brakeOut4wire, HIGH);
   }
   else
   {
-    digitalWrite(brakeOut, LOW);
-    digitalWrite(leftOut, LOW);
-    digitalWrite(rightOut, LOW);
+    digitalWrite(brakeOut5wire, LOW);
   }
   
   // LEFT SIGNAL
@@ -142,5 +135,4 @@ void loop()
     {
       digitalWrite(hazardsOut, LOW);
     }
-    
 }
