@@ -86,9 +86,7 @@ isFourWire = false; //testing 5 wire
   }
 
   //INTIALIZE BRAKE INTERRUPT
-  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, RISING);
-  //attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, RISING);				    	//Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
-  //attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeOFF, FALLING);
+  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);               //Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
 //  attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, RISING);				//Attaching interrupt for L_TURN_PIN. Calls leftSignalOn on RISING EDGE   
 //  attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, RISING);			//Attaching interrupt for R_TURN_PIN. Calls rightSignalOn on RISING EDGE
 
@@ -296,20 +294,25 @@ void brakeON() {
  
  
   //for use if RISING interrupt instead of CHANGE
-  L_LEDS = leftPerBrake;
-  R_LEDS = rightPerBrake;
+ 
+ if (brakeflag == false) {
+    
+    L_LEDS = leftPerBrake;
+    R_LEDS = rightPerBrake;
+    //brakeTime = millis();
+    brakeflag = true;
+  }
+
+  else{
+    
+    L_LEDS = leftPer;
+    R_LEDS = rightPer;   
+    brakeflag = false;
+  }
   //updateShift(L_LEDS,R_LEDS);
 
 }
 
-void brakeOFF() {
-  //INTERRUPT
-
-  L_LEDS = leftPerBrake;
-  R_LEDS = rightPerBrake;
-  //updateShift(L_LEDS,R_LEDS);
-
-}
 
 /*
 void leftSignalOn() {
