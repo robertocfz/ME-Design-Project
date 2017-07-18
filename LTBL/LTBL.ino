@@ -175,6 +175,9 @@ void calibrateWiring() {
         
       }
     }
+    if (caliWiringSuccess == true) {
+      break;
+    }
   }
 }
 
