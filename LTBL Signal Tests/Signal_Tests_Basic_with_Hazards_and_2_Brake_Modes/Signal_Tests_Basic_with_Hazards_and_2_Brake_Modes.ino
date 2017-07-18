@@ -39,7 +39,7 @@ void setup()
   pinMode(hazardsIn, INPUT);
   
   pinMode(leftOut, OUTPUT);
-  pinMode(rightIn, INPUT);
+  pinMode(rightOut, OUTPUT);
   pinMode(brakeOut4wire, OUTPUT);
   pinMode(brakeOut5wire, OUTPUT);
   pinMode(hazardsOut, OUTPUT);
@@ -73,7 +73,7 @@ void loop()
   }
   else
   {
-    digitalWrite(brakeOut5wire, LOW);
+    digitalWrite(brakeOut4wire, LOW);
   }
   
   // LEFT SIGNAL
