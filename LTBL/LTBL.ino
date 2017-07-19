@@ -26,14 +26,9 @@ volatile int R_LEDS = 0;
 
 //INITIALIZE TIMING VARIABLES
 unsigned long calibrationStopWatch = 0; //milliseconds. Used for calibration timing
-unsigned long currentTime = 0;
-unsigned int blinkPeriod = 7000;                  //milliseconds. Blinking Period
+unsigned int blinkPeriod = 7000;        //milliseconds. Blinking Period
 unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
-unsigned long leftSigTime = 0;          //milliseconds. Used to determine if signal is blinking
-unsigned long rightSigTime = 0;         //milliseconds. Used to determine if signal is blinking
-unsigned long brakeTime = 0;            //milliseconds. Used to time how long the brakes have been on
-unsigned int blinkDelay = 100;                   //milliseconds. Delay between segment blinks
-unsigned int leniency = 25;					          	//milliseconds. Leniency in blinkPeriod length for logical checks
+unsigned int blinkDelay = 100;          //milliseconds. Delay between segment blinks
 
 
 
@@ -42,10 +37,6 @@ bool isFourWire = true;                 //Default 4 wire standard in US
 bool brakeflag = false;                 //Tells if brake is on (REPLACE WITH BRAKE VAR)
 bool caliWiringSuccess = false;         //Calibration Flag for Wiring
 bool caliTimingSuccess = false;         //Calibration Flag for Signal Timing
-bool leftSignalFlag = false;            //Flag that the left signal is on
-bool rightSignalFlag = false;           //Flag that the right signal is on
-bool BLINKING = false;                  //Flag that shows if the signal is blinking
-
 
 
 //LIGHTING STATES
@@ -86,17 +77,14 @@ void setup() {
   }
 
   //INTIALIZE BRAKE INTERRUPT
-  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);               //Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
-  //  attachPCINT(digitalPinToPCINT(L_TURN_PIN),leftSignalOn, RISING);				//Attaching interrupt for L_TURN_PIN. Calls leftSignalOn on RISING EDGE
-  //  attachPCINT(digitalPinToPCINT(R_TURN_PIN), rightSignalOn, RISING);			//Attaching interrupt for R_TURN_PIN. Calls rightSignalOn on RISING EDGE
-
+  attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);                 //Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
 
   //READ EEPROM
   //blinkPeriod = 500 * 7;
   //EEPROM.put(1, blinkPeriod);
-  isFourWire = EEPROM.read(0);           //Reading EEPROM for wire calibration data
-  blinkPeriod = EEPROM.get(1, blinkPeriod);         //Reading EEPROM for timing calibration data
-  blinkDelay = blinkPeriod / 7;
+  isFourWire = EEPROM.read(0);                      //Reading EEPROM for wire calibration data
+  blinkPeriod = EEPROM.get(1, blinkPeriod);         //Reading EEPROM for timing calibration data. get instead of read for multiple bytes
+  blinkDelay = blinkPeriod/7;                       //Used for turn signal sequencing
 
 
   //RESET BLINK
@@ -149,13 +137,13 @@ void calibrateWiring() {
       if (isFourWire != true) {       	//If the current calibration is NOT 4 wire, change to 4 wire
         EEPROM.write(0, true);          //Write to 0th memory block that isFourWire = True
         isFourWire = true;
-        updateShift(leftHorn, rightHorn);
+        updateShift(4,128);
         caliWiringSuccess = true;
         break;
       }
       else {
         caliWiringSuccess = true;		    //Current calibration is already Four Wire, good check!
-        updateShift(4, 128);
+        updateShift(leftHorn, rightHorn);
         break;
       }
     }
@@ -163,13 +151,13 @@ void calibrateWiring() {
       if (isFourWire != false) {        //If the current calibration is NOT 5 wire, change to 5 wire
         EEPROM.write(0, false);         //Write to 0th memory block that isFourWire = False
         isFourWire = false;
-        updateShift(leftHorn, rightHorn);
+        updateShift(8,64);
         caliWiringSuccess = true;
         break;
       }
       else {
         caliWiringSuccess = true;		    //Current calibration is already Five Wire, good check!
-        updateShift(4, 128);
+        updateShift(leftHorn, rightHorn);
         break;
 
       }
@@ -193,6 +181,7 @@ void calibrateTiming() {
 
   while ((millis() - calibrationStopWatch) < caliTimeout && BRAKE == HIGH && caliTimingSuccess == false) {
     if (digitalRead(L_TURN_PIN) == HIGH && caliTimingSuccess == false) {
+      updateShift(leftBrake,0);
       newTime = pulseIn(L_TURN_PIN, LOW , 3000000) / 1000;
       if (newTime != 0 && newTime < 1500 && newTime > 25) {
         updateShift(leftBrake, rightBrake);
@@ -200,11 +189,13 @@ void calibrateTiming() {
         delay(500);
       }
       else {
-        //updateShift(64,64);
+        updateShift(64,64);
+        delay(500);
       }
     }
 
     if (digitalRead(R_TURN_PIN) == HIGH && caliTimingSuccess == false) {
+      updateShift(leftBrake,0);
       newTime = pulseIn(R_TURN_PIN,LOW , 3000000)/1000;
       if (newTime != 0 && newTime < 1500 && newTime > 25) {
         updateShift(leftBrake, rightBrake);
@@ -212,7 +203,8 @@ void calibrateTiming() {
         delay(500);
       }
       else {
-        //updateShift(64,64);
+        updateShift(64,64);
+        delay(500);
       }
     }
 
@@ -220,7 +212,7 @@ void calibrateTiming() {
     if (((newTime - blinkPeriod) > 25 || (blinkPeriod - newTime) > 25) && caliTimingSuccess == true) {
       blinkPeriod = (unsigned int) newTime;
       EEPROM.put(1, blinkPeriod);                    //Store new timing in 1st address
-      blinkDelay = blinkPeriod / 7;                //New delay for horn run sequence
+      blinkDelay = blinkPeriod / 7;                  //New delay for horn run sequence
       updateShift(leftHorn, rightHorn);
       delay(500);
     }
@@ -270,15 +262,14 @@ void runRight() {
 }
 
 void emergencyFlashers() {
+  //Flashes both horns while preserving braking information
+  while (LEFT == HIGH && RIGHT == HIGH) {
+    updateShift(L_LEDS, R_LEDS);
+    delay(blinkDelay);
+    updateShift(L_LEDS - leftHorn, R_LEDS - rightHorn);
+    delay(blinkDelay);
 
-  while (L_TURN == HIGH && R_TURN == HIGH) {
-    if (L_TURN == HIGH && R_TURN == HIGH) {
-      updateShift(leftPerBrake, rightPerBrake);
-      delay(blinkPeriod);
-      updateShift(0, 0);
-      delay(blinkPeriod);
-    }
-
+    BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
     R_TURN = digitalRead(R_TURN_PIN);
   }
@@ -305,68 +296,6 @@ void brakeON() {
 
 
 
-void leftSignalOn() {
-  //INTERRUPT
-  //Uses interrupt on L_TURN_PIN and R_TURN_PIN to time signal on
-  //Only relevant for four wire
-  leftSigTime = millis();
-}
-
-void rightSignalOn() {
-  //INTERRUPT
-  //Uses interrupt on L_TURN_PIN and R_TURN_PIN to time signal on
-  //Only relevant for four wire
-  rightSigTime = millis();
-}
-
-bool isBlinking() {
-  //Used to check if the lights are blinking or solid
-  //Only used in 4 Wire
-  //This is where the magic logic comes into play for all 4 wire complexities
-
-  //I think this has a flaw in the logic...please look over the conditions
-  unsigned long currentTime = millis();
-  unsigned long brakeStopwatch = currentTime - brakeTime;
-  unsigned long leftStopwatch = currentTime - leftSigTime;
-  unsigned long rightStopwatch = currentTime - rightSigTime;
-  unsigned long blinkLeniency = blinkPeriod + leniency;
-
-  if (BRAKE == LOW && L_TURN == HIGH && R_TURN == LOW) {                     //BAISC LEFT TURN
-    BLINKING == true;
-  }
-
-  else if (BRAKE == LOW && L_TURN == LOW && R_TURN == HIGH) {                //BASIC RIGHT TURN
-    BLINKING == true;
-  }
-
-  else if (BRAKE == LOW && L_TURN == HIGH && R_TURN == HIGH) {  			       //BASIC HAZARD LIGHTS
-    BLINKING = true;
-  }
-
-  else if (BRAKE == HIGH && brakeStopwatch > blinkLeniency) {
-    BLINKING = true;														 //IF BRAKE HELD LONGER THAN BLINKPERIOD
-  }																        			 //IT IS BLINKING!
-
-  else if (BRAKE == HIGH && rightStopwatch > leftStopwatch && leftStopwatch < blinkLeniency) {
-    BLINKING = true;														 //BRAKING AND LEFT TURN
-  }
-
-  else if (BRAKE == HIGH && leftStopwatch > rightStopwatch && rightStopwatch < blinkLeniency) {
-    BLINKING = true;														 //BRAKING AND LEFT TURN
-  }
-
-  else if (BRAKE == HIGH && leftStopwatch - rightStopwatch < leniency) {
-    BLINKING = true;														 //BRAKING AND HAZARDS
-  }
-
-  else {
-    BLINKING = false;
-  }
-
-  return BLINKING;
-}
-
-
 
 //MAIN LOOP. RUNS INFINIETLY
 void loop() {
@@ -383,7 +312,7 @@ void loop() {
   if (millis() < 2000 && BRAKE == HIGH) {      //Brake must be held down when key on 500 ms leniency
     calibrationStopWatch = millis();                     //Get current time processor has been on
     updateShift(2, 256);
-    delay(500);
+    delay(1500);
 
     //CALIBRATION LOOP
     while ((millis() - calibrationStopWatch) < caliTimeout && BRAKE == HIGH) {    //While less than 10s AND brake is pressed
@@ -408,6 +337,8 @@ void loop() {
         updateShift(0, rightPerBrake);
         delay(250);
         updateShift(leftPerBrake, rightPerBrake);
+        delay(250);
+        updateShift(0,0);
         break;			//All calibrated and ready to roll
       }
     }
