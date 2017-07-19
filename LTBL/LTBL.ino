@@ -128,7 +128,7 @@ void calibrateWiring() {
   //do this by checking when the brake pedal is depressed
   //if both turn signals are on, it is 4 wire. otherwise it is 5
 
-  calibrationStopWatch = millis();				  //Reset timer for calibration mode
+  calibrationStopWatch = millis();		  //Reset timer for calibration mode
   while (((millis() - calibrationStopWatch) < caliTimeout) && BRAKE == HIGH && caliWiringSuccess == false) {      //Timeout after 10 seconds
     //READ PINS
 
@@ -346,29 +346,29 @@ void loop() {
 
   //DEFAULT LIGHTING IS PERIPHERY
 
-  if (BRAKE == HIGH) {               //This case should prevent blinking when brake is held down
-    L_LEDS = leftPerBrake;           //L_LEDS will be a container that we can add to to light up different sections
-    R_LEDS = rightPerBrake;          //R_LEDS will be a container that we can add to to light up different sections
+  if (BRAKE == HIGH) {                        //This case should prevent blinking when brake is held down
+    L_LEDS = leftPerBrake;                    //L_LEDS will be a container that we can add to to light up different sections
+    R_LEDS = rightPerBrake;                   //R_LEDS will be a container that we can add to to light up different sections
   }
 
   else {
-    L_LEDS = leftPer;                       //L_LEDS will be a container that we can add to to light up different sections
-    R_LEDS = rightPer;                      //R_LEDS will be a container that we can add to to light up different sections
+    L_LEDS = leftPer;                         //L_LEDS will be a container that we can add to to light up different sections
+    R_LEDS = rightPer;                        //R_LEDS will be a container that we can add to to light up different sections
   }
 
 
   //FOUR WIRE SECTION
   if (isFourWire == true) {
 
-    if (L_TURN == HIGH && R_TURN == HIGH && isBlinking() == true) {   //EMERGENCY FLASHERS
+    if (L_TURN == HIGH && R_TURN == HIGH) {   //EMERGENCY FLASHERS
       emergencyFlashers();
     }
 
-    if (L_TURN == HIGH && isBlinking() == true) {                     //LEFT SIGNAL
+    if (L_TURN == HIGH) {                     //LEFT SIGNAL
       runLeft();
     }
 
-    if (R_TURN == HIGH && isBlinking() == true) {                     //RIGHT SIGNAL
+    if (R_TURN == HIGH) {                     //RIGHT SIGNAL
       runRight();
     }
   }
@@ -391,7 +391,7 @@ void loop() {
     }
   }
 
-  updateShift(L_LEDS, R_LEDS);              //OUTPUT PERIPHERY OR BRAKE LIGHTS
+  updateShift(L_LEDS, R_LEDS);                //OUTPUT PERIPHERY OR BRAKE LIGHTS
 }
 
 
