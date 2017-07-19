@@ -80,8 +80,8 @@ void setup() {
   attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);                 //Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
 
   //READ EEPROM
-  //blinkPeriod = 500 * 7;
-  //EEPROM.put(1, blinkPeriod);
+  EEPROM.write(0,isFourWire);
+  EEPROM.put(1, blinkPeriod);
   isFourWire = EEPROM.read(0);                      //Reading EEPROM for wire calibration data
   blinkPeriod = EEPROM.get(1, blinkPeriod);         //Reading EEPROM for timing calibration data. get instead of read for multiple bytes
   blinkDelay = blinkPeriod/7;                       //Used for turn signal sequencing
@@ -179,7 +179,7 @@ void calibrateTiming() {
   //Timeout after 10 seconds (see pulseIn line)
 
   calibrationStopWatch = millis();
-  int newTime = 0;
+  unsigned long newTime = 0;
   updateShift(16,32);
 
   while ((millis() - calibrationStopWatch) < caliTimeout && BRAKE == HIGH && caliTimingSuccess == false) {
@@ -187,8 +187,10 @@ void calibrateTiming() {
     if (isFourWire == true) {
 
       if (L_TURN == LOW && caliTimingSuccess == false) {
-        updateShift(leftBrake,0);
-        newTime = pulseIn(L_TURN_PIN, HIGH , 3000000) / 1000;
+        updateShift(leftBrake,256);
+        while (digitalRead(L_TURN_PIN) == LOW){
+        }
+        newTime = pulseIn(L_TURN_PIN, LOW , 3000000) / 1000;
         if (newTime != 0 && newTime < 1500 && newTime > 25) {
           caliTimingSuccess = true;
           updateShift(leftBrake, rightBrake);
@@ -198,8 +200,10 @@ void calibrateTiming() {
       }
 
       if (R_TURN == LOW && caliTimingSuccess == false) {
-        updateShift(leftBrake,0);
-        newTime = pulseIn(R_TURN_PIN,HIGH , 3000000)/1000;
+        updateShift(leftBrake,128);
+        while (digitalRead(R_TURN_PIN) == LOW) {
+        }
+        newTime = pulseIn(R_TURN_PIN,LOW , 3000000)/1000;
         if (newTime != 0 && newTime < 1500 && newTime > 25) {
           caliTimingSuccess = true;
           updateShift(leftBrake, rightBrake);
@@ -211,7 +215,7 @@ void calibrateTiming() {
     else if (isFourWire == false) {
 
       if (L_TURN == HIGH && caliTimingSuccess == false) {
-        updateShift(leftBrake,0);
+        updateShift(leftBrake,64);
         newTime = pulseIn(L_TURN_PIN, LOW , 3000000) / 1000;
         if (newTime != 0 && newTime < 1500 && newTime > 25) {
           caliTimingSuccess = true;
@@ -222,7 +226,7 @@ void calibrateTiming() {
       }
 
       if (R_TURN == HIGH && caliTimingSuccess == false) {
-        updateShift(leftBrake,0);
+        updateShift(leftBrake,32);
         newTime = pulseIn(R_TURN_PIN,LOW , 3000000)/1000;
         if (newTime != 0 && newTime < 1500 && newTime > 25) {
           caliTimingSuccess = true;
