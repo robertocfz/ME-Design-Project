@@ -137,13 +137,15 @@ void calibrateWiring() {
       if (isFourWire != true) {       	//If the current calibration is NOT 4 wire, change to 4 wire
         EEPROM.write(0, true);          //Write to 0th memory block that isFourWire = True
         isFourWire = true;
-        updateShift(4,128);
         caliWiringSuccess = true;
+        updateShift(4,128);
+        delay(500);
         break;
       }
       else {
         caliWiringSuccess = true;		    //Current calibration is already Four Wire, good check!
         updateShift(leftHorn, rightHorn);
+        delay(500);
         break;
       }
     }
@@ -151,20 +153,20 @@ void calibrateWiring() {
       if (isFourWire != false) {        //If the current calibration is NOT 5 wire, change to 5 wire
         EEPROM.write(0, false);         //Write to 0th memory block that isFourWire = False
         isFourWire = false;
-        updateShift(8,64);
         caliWiringSuccess = true;
+        updateShift(8,64);
+        delay(500);
         break;
       }
       else {
         caliWiringSuccess = true;		    //Current calibration is already Five Wire, good check!
         updateShift(leftHorn, rightHorn);
+        delay(500);
         break;
 
       }
     }
-    if (caliWiringSuccess == true) {
-      break;
-    }
+
     BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
     R_TURN = digitalRead(R_TURN_PIN);
@@ -178,35 +180,58 @@ void calibrateTiming() {
 
   calibrationStopWatch = millis();
   int newTime = 0;
+  updateShift(16,32);
 
   while ((millis() - calibrationStopWatch) < caliTimeout && BRAKE == HIGH && caliTimingSuccess == false) {
-    if (digitalRead(L_TURN_PIN) == HIGH && caliTimingSuccess == false) {
-      updateShift(leftBrake,0);
-      newTime = pulseIn(L_TURN_PIN, LOW , 3000000) / 1000;
-      if (newTime != 0 && newTime < 1500 && newTime > 25) {
-        updateShift(leftBrake, rightBrake);
-        caliTimingSuccess = true;
-        delay(500);
+
+    if (isFourWire == true) {
+
+      if (L_TURN == LOW && caliTimingSuccess == false) {
+        updateShift(leftBrake,0);
+        newTime = pulseIn(L_TURN_PIN, HIGH , 3000000) / 1000;
+        if (newTime != 0 && newTime < 1500 && newTime > 25) {
+          caliTimingSuccess = true;
+          updateShift(leftBrake, rightBrake);
+          delay(500);
+        }
+
       }
-      else {
-        updateShift(64,64);
-        delay(500);
+
+      if (R_TURN == LOW && caliTimingSuccess == false) {
+        updateShift(leftBrake,0);
+        newTime = pulseIn(R_TURN_PIN,HIGH , 3000000)/1000;
+        if (newTime != 0 && newTime < 1500 && newTime > 25) {
+          caliTimingSuccess = true;
+          updateShift(leftBrake, rightBrake);
+          delay(500);
+        }
       }
     }
 
-    if (digitalRead(R_TURN_PIN) == HIGH && caliTimingSuccess == false) {
-      updateShift(leftBrake,0);
-      newTime = pulseIn(R_TURN_PIN,LOW , 3000000)/1000;
-      if (newTime != 0 && newTime < 1500 && newTime > 25) {
-        updateShift(leftBrake, rightBrake);
-        caliTimingSuccess = true;
-        delay(500);
+    else if (isFourWire == false) {
+
+      if (L_TURN == HIGH && caliTimingSuccess == false) {
+        updateShift(leftBrake,0);
+        newTime = pulseIn(L_TURN_PIN, LOW , 3000000) / 1000;
+        if (newTime != 0 && newTime < 1500 && newTime > 25) {
+          caliTimingSuccess = true;
+          updateShift(leftBrake, rightBrake);
+          delay(500);
+        }
+
       }
-      else {
-        updateShift(64,64);
-        delay(500);
+
+      if (R_TURN == HIGH && caliTimingSuccess == false) {
+        updateShift(leftBrake,0);
+        newTime = pulseIn(R_TURN_PIN,LOW , 3000000)/1000;
+        if (newTime != 0 && newTime < 1500 && newTime > 25) {
+          caliTimingSuccess = true;
+          updateShift(leftBrake, rightBrake);
+          delay(500);
+        }
       }
     }
+    
 
     //If stored value is more than 25 milliseconds difference
     if (((newTime - blinkPeriod) > 25 || (blinkPeriod - newTime) > 25) && caliTimingSuccess == true) {
@@ -263,11 +288,11 @@ void runRight() {
 
 void emergencyFlashers() {
   //Flashes both horns while preserving braking information
-  while (LEFT == HIGH && RIGHT == HIGH) {
+  while (L_TURN == HIGH && R_TURN == HIGH) {
     updateShift(L_LEDS, R_LEDS);
-    delay(blinkDelay);
+    delay(blinkPeriod);
     updateShift(L_LEDS - leftHorn, R_LEDS - rightHorn);
-    delay(blinkDelay);
+    delay(blinkPeriod);
 
     BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
@@ -304,7 +329,7 @@ void loop() {
   BRAKE = digitalRead(BRAKE_PIN);
   L_TURN = digitalRead(L_TURN_PIN);
   R_TURN = digitalRead(R_TURN_PIN);
-  currentTime = millis();
+
 
 
 
@@ -360,17 +385,36 @@ void loop() {
   //FOUR WIRE SECTION
   if (isFourWire == true) {
 
-    if (L_TURN == HIGH && R_TURN == HIGH) {   //EMERGENCY FLASHERS
-      emergencyFlashers();
+    if (BRAKE == HIGH) {
+
+      if (L_TURN == LOW && R_TURN == LOW) {
+        emergencyFlashers(); //FLAWED
+      }
+
+      if (L_TURN == LOW && R_TURN == HIGH) {
+        runLeft();
+      }
+
+      if (L_TURN == HIGH && R_TURN == LOW) {
+        runRight();
+      }
     }
 
-    if (L_TURN == HIGH) {                     //LEFT SIGNAL
-      runLeft();
-    }
+    else {
 
-    if (R_TURN == HIGH) {                     //RIGHT SIGNAL
-      runRight();
+      if (L_TURN == HIGH && R_TURN == HIGH) {   //EMERGENCY FLASHERS
+        emergencyFlashers();
+      }
+
+      if (L_TURN == HIGH) {                     //LEFT SIGNAL
+        runLeft();
+      }
+
+      if (R_TURN == HIGH) {                     //RIGHT SIGNAL
+        runRight();
+      }
     }
+    
   }
 
 
