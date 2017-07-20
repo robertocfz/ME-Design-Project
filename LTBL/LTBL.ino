@@ -26,7 +26,7 @@ volatile int R_LEDS = 0;
 
 //INITIALIZE TIMING VARIABLES
 unsigned long calibrationStopWatch = 0; //milliseconds. Used for calibration timing
-unsigned int blinkPeriod = 7000;        //milliseconds. Blinking Period
+unsigned int blinkPeriod = 700;        //milliseconds. Blinking Period
 unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
 unsigned int blinkDelay = 100;          //milliseconds. Delay between segment blinks
 
@@ -80,8 +80,8 @@ void setup() {
   attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);                 //Attaching interrupt for BRAKE_PIN. Calls brakeON() function on CHANGE
 
   //READ EEPROM
-  EEPROM.write(0,isFourWire);
-  EEPROM.put(1, blinkPeriod);
+  //EEPROM.write(0,isFourWire);
+  //EEPROM.put(1, blinkPeriod);
   isFourWire = EEPROM.read(0);                      //Reading EEPROM for wire calibration data
   blinkPeriod = EEPROM.get(1, blinkPeriod);         //Reading EEPROM for timing calibration data. get instead of read for multiple bytes
   blinkDelay = blinkPeriod/7;                       //Used for turn signal sequencing
@@ -341,7 +341,7 @@ void loop() {
   if (millis() < 2000 && BRAKE == HIGH) {      //Brake must be held down when key on 500 ms leniency
     calibrationStopWatch = millis();                     //Get current time processor has been on
     updateShift(2, 256);
-    delay(1500);
+    delay(1000);
 
     //CALIBRATION LOOP
     while ((millis() - calibrationStopWatch) < caliTimeout && BRAKE == HIGH) {    //While less than 10s AND brake is pressed
