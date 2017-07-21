@@ -1,0 +1,24 @@
+#######################################
+# Syntax Coloring Map for SignalTests
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+SignalTests	(KEYWORD1)
+leftBlinkers	(KEYWORD2)
+rightBlinkers	(KEYWORD2)
+fourWire	(KEYWORD2)
+fiveWire	(KEYWORD2)
+hazardLights	(KEYWORD2)
+runSimulation	(KEYWORD2)
+
+#######################################
+
+# Constants (LITERAL1)
+#######################################

@@ -1,14 +1,14 @@
-const int leftIn = 7;
-const int rightIn = 8;
-const int brakeIn4wire = 9;
-const int brakeIn5wire = 10;
-const int hazardsIn = 11;
+const int leftIn = 2;
+const int rightIn = 3;
+const int brakeIn4wire = 4;
+const int brakeIn5wire = 5;
+const int hazardsIn = 6;
 
-const int leftOut = 2;
-const int rightOut = 3;
-const int brakeOut4wire = 4;
-const int brakeOut5wire = 5;
-const int hazardsOut = 6;
+const int leftOut = 7;
+const int rightOut = 8;
+const int brakeOut4wire = 9;
+const int brakeOut5wire = 10;
+const int hazardsOut = 11;
 
 unsigned long previousMillisLeft = 0;
 unsigned long previousMillisRight = 0;
@@ -48,11 +48,11 @@ void setup()
 
 void loop() 
 {
-  RIGHT = digitalRead(rightIn);  
   LEFT = digitalRead(leftIn);
-  HAZARDS = digitalRead(hazardsIn);
+  RIGHT = digitalRead(rightIn); 
   BRAKE4wire = digitalRead(brakeIn4wire);
-  BRAKE5wire = digitalRead(brakeIn5wire);
+  BRAKE5wire = digitalRead(brakeIn5wire); 
+  HAZARDS = digitalRead(hazardsIn);
 
   unsigned long currentMillis = millis();
 
@@ -73,7 +73,7 @@ void loop()
   }
   else
   {
-    digitalWrite(brakeOut4wire, LOW);
+    digitalWrite(brakeOut5wire, LOW);
   }
   
   // LEFT SIGNAL

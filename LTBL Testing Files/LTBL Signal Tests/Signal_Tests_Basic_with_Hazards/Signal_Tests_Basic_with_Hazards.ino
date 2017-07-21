@@ -1,20 +1,25 @@
-const int leftIn = 8;
-const int rightIn = 10;
-const int brakeIn = 12;
+const int leftIn = 2;
+const int rightIn = 3;
+const int brakeIn = 4;
+const int hazardsIn = 5;
 
-const int leftOut = 2;
-const int rightOut = 4;
-const int brakeOut = 6;
+const int leftOut = 8;
+const int rightOut = 9;
+const int brakeOut = 10;
+const int hazardsOut = 11;
 
 int LEFT;
 int RIGHT;
+int HAZARDS;
 int BRAKE;
 
 int leftState;
 int rightState;
+int hazardsState;
 
 unsigned long previousMillisLeft = 0;
 unsigned long previousMillisRight = 0;
+unsigned long previousMillisHazards = 0;
 
 const long interval = 150;
 
@@ -25,10 +30,12 @@ void setup()
   pinMode(leftIn, INPUT);
   pinMode(rightIn, INPUT);
   pinMode(brakeIn, INPUT);
+  pinMode(hazardsIn, INPUT);
   
   pinMode(leftOut, OUTPUT);
   pinMode(rightOut, OUTPUT);
   pinMode(brakeOut, OUTPUT);
+  pinMode(hazardsOut, OUTPUT);
 }
 
 void loop() 
@@ -38,6 +45,7 @@ void loop()
   LEFT = digitalRead(leftIn);
   RIGHT = digitalRead(rightIn);
   BRAKE = digitalRead(brakeIn);
+  HAZARDS = digitalRead(hazardsIn);
 
   // BRAKE SIGNAL
   if (BRAKE == HIGH) 
@@ -88,5 +96,24 @@ void loop()
   {
     digitalWrite(rightOut, LOW);
   }
-  
+
+  // HAZARDS SIGNAL
+  if ( (currentMillis - previousMillisHazards >= interval) && (HAZARDS == HIGH) ) 
+    {
+      previousMillisHazards = currentMillis;
+    
+      if (hazardsState == LOW) 
+      {
+        hazardsState = HIGH;
+      } 
+      else 
+      {
+        hazardsState = LOW;
+      }
+      digitalWrite(hazardsOut, hazardsState);
+    }
+  else if ( (currentMillis - previousMillisHazards >= interval) && (HAZARDS == LOW) )
+  {
+    digitalWrite(hazardsOut, LOW);
+  }
 }

@@ -1,0 +1,159 @@
+const int leftIn = 2;
+const int rightIn = 3;
+const int brakeIn4wire = 4;
+const int brakeIn5wire = 5;
+const int hazardsIn = 6;
+
+const int leftOut = 7;
+const int rightOut = 8;
+const int brakeOut4wire = 9;
+const int brakeOut5wire = 10;
+const int hazardsOut = 11;
+
+unsigned long previousMillisLeft = 0;
+unsigned long previousMillisRight = 0;
+unsigned long previousMillisHazards = 0;
+
+const long interval = 150;
+
+int BRAKE4wire;
+int BRAKE5wire;
+
+int LEFT;
+int leftState = LOW;
+
+int RIGHT;
+int rightState = LOW;
+
+int HAZARDS;
+int hazardsState = LOW;
+
+void setup() 
+{
+  Serial.begin(9600);
+  
+  pinMode(leftIn, INPUT);
+  pinMode(rightIn, INPUT);
+  pinMode(brakeIn4wire, INPUT);
+  pinMode(brakeIn5wire, INPUT);
+  pinMode(hazardsIn, INPUT);
+  
+  pinMode(leftOut, OUTPUT);
+  pinMode(rightOut, OUTPUT);
+  pinMode(brakeOut4wire, OUTPUT);
+  pinMode(brakeOut5wire, OUTPUT);
+  pinMode(hazardsOut, OUTPUT);
+
+}
+
+void loop() 
+{
+  LEFT = digitalRead(leftIn);
+  RIGHT = digitalRead(rightIn);
+  BRAKE4wire = digitalRead(brakeIn4wire);
+  BRAKE5wire = digitalRead(brakeIn5wire);
+  HAZARDS = digitalRead(hazardsIn);
+
+  unsigned long currentMillis = millis();
+
+  fiveWire(BRAKE5wire);
+  fourWire(BRAKE4wire);
+  rightBlinkers(RIGHT, currentMillis);
+  leftBlinkers(LEFT, currentMillis);
+  hazardLights(HAZARDS, currentMillis);
+}
+
+// 5 WIRE BRAKE SIGNAL
+void fiveWire(int BRAKE5wire)
+{
+    if (BRAKE5wire == HIGH) 
+  {
+    digitalWrite(brakeOut5wire, HIGH);
+  }
+  else
+  {
+    digitalWrite(brakeOut5wire, LOW);
+  }
+}
+
+// 4 WIRE BRAKE SIGNAL
+void fourWire(int BRAKE4wire)
+{
+    if (BRAKE4wire == HIGH) 
+  {
+    digitalWrite(brakeOut4wire, HIGH);
+  }
+  else
+  {
+    digitalWrite(brakeOut4wire, LOW);
+  }
+}
+
+// LEFT SIGNAL
+void leftBlinkers(int LEFT, unsigned long currentMillis)
+{ 
+  if ( (currentMillis - previousMillisLeft >= interval) && (LEFT == HIGH) ) 
+  {
+    previousMillisLeft = currentMillis;
+  
+    if (leftState == LOW) 
+    {
+      leftState = HIGH;
+    } 
+    else 
+    {
+      leftState = LOW;
+    }
+    digitalWrite(leftOut, leftState);
+  }
+  else if ( (currentMillis - previousMillisLeft >= interval) && (LEFT == LOW) ) 
+  {
+    digitalWrite(leftOut, LOW);
+  }
+}
+
+// RIGHT SIGNAL
+void rightBlinkers(int RIGHT, unsigned long currentMillis)
+{ 
+  if ( (currentMillis - previousMillisRight >= interval) && (RIGHT == HIGH) ) 
+  {
+    previousMillisRight = currentMillis;
+  
+    if (rightState == LOW) 
+    {
+      rightState = HIGH;
+    } 
+    else 
+    {
+      rightState = LOW;
+    }
+    digitalWrite(rightOut, rightState);
+  }
+  else if ( (currentMillis - previousMillisRight >= interval) && (RIGHT == LOW) ) 
+  {
+    digitalWrite(rightOut, LOW);
+  }
+}
+
+// HAZARDS SIGNAL
+void hazardLights(int HAZARDS, unsigned long currentMillis)
+{
+  if ( (currentMillis - previousMillisHazards >= interval) && (HAZARDS == HIGH) )
+  {
+    previousMillisHazards = currentMillis;
+    
+    if (hazardsState == LOW) 
+    {
+      hazardsState = HIGH;
+    }
+    else
+    {
+      hazardsState = LOW;
+    }
+    digitalWrite(hazardsOut, hazardsState);
+  }
+  else if ( (currentMillis - previousMillisHazards >= interval) && (HAZARDS == LOW) )
+  {
+    digitalWrite(hazardsOut, LOW);
+  }
+}
