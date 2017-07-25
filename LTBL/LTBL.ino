@@ -26,9 +26,11 @@ volatile int R_LEDS = 0;
 
 //INITIALIZE TIMING VARIABLES
 unsigned long calibrationStopWatch = 0; //milliseconds. Used for calibration timing
-unsigned int blinkPeriod = 700;        //milliseconds. Blinking Period
+unsigned int blinkPeriod = 700;         //milliseconds. Active blinking time (HIGH)
 unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
 unsigned int blinkDelay = 100;          //milliseconds. Delay between segment blinks
+unsigned long currentMillis = 0;        //milliseconds. 
+unsigned long previousMillis = 0;       //milliseconds.
 
 
 
@@ -37,6 +39,7 @@ bool isFourWire = true;                 //Default 4 wire standard in US
 bool brakeflag = false;                 //Tells if brake is on (REPLACE WITH BRAKE VAR)
 bool caliWiringSuccess = false;         //Calibration Flag for Wiring
 bool caliTimingSuccess = false;         //Calibration Flag for Signal Timing
+bool hazardFlag = false;                //Emergency Flashers state
 
 
 //LIGHTING STATES
@@ -138,7 +141,7 @@ void calibrateWiring() {
         EEPROM.write(0, true);          //Write to 0th memory block that isFourWire = True
         isFourWire = true;
         caliWiringSuccess = true;
-        updateShift(4,128);
+        updateShift(leftHorn,256);
         delay(500);
         break;
       }
@@ -154,7 +157,7 @@ void calibrateWiring() {
         EEPROM.write(0, false);         //Write to 0th memory block that isFourWire = False
         isFourWire = false;
         caliWiringSuccess = true;
-        updateShift(8,64);
+        updateShift(2,rightHorn);
         delay(500);
         break;
       }
@@ -180,7 +183,7 @@ void calibrateTiming() {
 
   calibrationStopWatch = millis();
   unsigned long newTime = 0;
-  updateShift(16,32);
+  updateShift(leftHorn, rightHorn);
 
   while ((millis() - calibrationStopWatch) < caliTimeout && BRAKE == HIGH && caliTimingSuccess == false) {
 
@@ -290,19 +293,35 @@ void runRight() {
 
 }
 
-void emergencyFlashers() {
-  //Flashes both horns while preserving braking information
-  while (L_TURN == HIGH && R_TURN == HIGH) {
-    updateShift(L_LEDS, R_LEDS);
-    delay(blinkPeriod);
-    updateShift(L_LEDS - leftHorn, R_LEDS - rightHorn);
-    delay(blinkPeriod);
 
+void emergencyFlashers() {
+  while (L_TURN == R_TURN) {
+    currentMillis = millis();
+
+    if (hazardFlag == false && (currentMillis - previousMillis >= blinkPeriod)) {
+      updateShift(L_LEDS, R_LEDS);
+      hazardFlag = true;
+      previousMillis = millis();
+    }
+
+    else if (hazardFlag == true && (currentMillis - previousMillis >= blinkPeriod)) {
+      updateShift(L_LEDS - leftHorn, R_LEDS - rightHorn);
+      hazardFlag = false;
+      previousMillis = millis();
+    }
+
+    if (BRAKE == LOW && L_TURN == LOW && R_TURN == LOW) {
+      break;
+    }
+    
     BRAKE = digitalRead(BRAKE_PIN);
     L_TURN = digitalRead(L_TURN_PIN);
     R_TURN = digitalRead(R_TURN_PIN);
+
   }
 }
+
+
 
 void brakeON() {
   //INTERRUPT
@@ -312,6 +331,7 @@ void brakeON() {
 
     L_LEDS = leftPerBrake;
     R_LEDS = rightPerBrake;
+    //updateShift(L_LEDS,R_LEDS); //stability issues in turn signal functions
     brakeflag = true;
   }
 
@@ -319,6 +339,7 @@ void brakeON() {
 
     L_LEDS = leftPer;
     R_LEDS = rightPer;
+    //updateShift(L_LEDS,R_LEDS);
     brakeflag = false;
   }
 }
@@ -333,6 +354,7 @@ void loop() {
   BRAKE = digitalRead(BRAKE_PIN);
   L_TURN = digitalRead(L_TURN_PIN);
   R_TURN = digitalRead(R_TURN_PIN);
+  currentMillis = millis();
 
 
 
@@ -392,7 +414,7 @@ void loop() {
     if (BRAKE == HIGH) {
 
       if (L_TURN == LOW && R_TURN == LOW) {
-        emergencyFlashers(); //FLAWED
+        emergencyFlashers(); 
       }
 
       if (L_TURN == LOW && R_TURN == HIGH) {
