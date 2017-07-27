@@ -73,7 +73,7 @@ void loop()
   }
   else
   {
-    digitalWrite(brakeOut5wire, LOW);
+    digitalWrite(brakeOut4wire, LOW);
   }
   
   // LEFT SIGNAL
