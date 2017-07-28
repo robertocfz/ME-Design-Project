@@ -14,6 +14,7 @@ const int CLK = 8;          //Physical Pin 5
 const int R_TURN_PIN = 2;   //Physical Pin 11
 const int BRAKE_PIN = 1;    //Physical Pin 12
 const int L_TURN_PIN = 0;   //Physical Pin 13
+const int TEST_PIN = 7;     //used for loop time 
 
 //PIN STATES
 int R_TURN = 0;
@@ -72,8 +73,10 @@ void setup() {
   pinMode(LATCH, OUTPUT);
   pinMode(CLK, OUTPUT);
   pinMode(R_TURN_PIN, INPUT);
-  pinMode(BRAKE_PIN, INPUT_PULLUP);
+  pinMode(BRAKE_PIN, INPUT);
   pinMode(L_TURN_PIN, INPUT);
+
+  pinMode(TEST_PIN, OUTPUT);
 
   if (digitalRead(BRAKE_PIN) == HIGH) {
     brakeflag = true;
@@ -310,6 +313,7 @@ void emergencyFlashers() {
       previousMillis = millis();
     }
 
+
     if (BRAKE == LOW && L_TURN == LOW && R_TURN == LOW) {
       break;
     }
@@ -349,12 +353,12 @@ void brakeON() {
 
 //MAIN LOOP. RUNS INFINIETLY
 void loop() {
-
+  //digitalWrite(TEST_PIN,HIGH);
+  //digitalWrite(TEST_PIN,LOW);
   //READ PINS
   BRAKE = digitalRead(BRAKE_PIN);
   L_TURN = digitalRead(L_TURN_PIN);
   R_TURN = digitalRead(R_TURN_PIN);
-  currentMillis = millis();
 
 
 
@@ -462,6 +466,7 @@ void loop() {
   }
 
   updateShift(L_LEDS, R_LEDS);                //OUTPUT PERIPHERY OR BRAKE LIGHTS
+
 }
 
 
