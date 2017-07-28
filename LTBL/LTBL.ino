@@ -103,7 +103,7 @@ void setup() {
   //EEPROM.put(1, blinkPeriod);
   isFourWire = EEPROM.read(0);                      //Reading EEPROM for wire calibration data
   blinkPeriod = EEPROM.get(1, blinkPeriod);         //Reading EEPROM for timing calibration data. get instead of read for multiple bytes
-  blinkDelay = blinkPeriod/6;                       //Used for turn signal sequencing
+  blinkDelay = blinkPeriod/7;                       //Used for turn signal sequencing
 
 
   //RESET BLINK
@@ -260,7 +260,7 @@ void calibrateTiming() {
     if (((newTime - blinkPeriod) > 25 || (blinkPeriod - newTime) > 25) && caliTimingSuccess == true) {
       blinkPeriod = (unsigned int) newTime;
       EEPROM.put(1, blinkPeriod);                    //Store new timing in 1st address
-      blinkDelay = blinkPeriod / 6;                  //New delay for horn run sequence
+      blinkDelay = blinkPeriod / 7;                  //New delay for horn run sequence
       updateShift(leftHorn, rightHorn);
       delay(500);
     }
