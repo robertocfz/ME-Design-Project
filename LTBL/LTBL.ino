@@ -17,9 +17,16 @@ const int L_TURN_PIN = 0;   //Physical Pin 13
 const int TEST_PIN = 7;     //used for loop time 
 
 //PIN STATES
-int R_TURN = 0;
 int L_TURN = 0;
+int R_TURN = 0;
 int BRAKE = 0;
+int temp_L_TURN = 0;
+int temp_R_TURN = 0;
+int temp_BRAKE = 0;
+int prev_L_TURN = 0;
+int prev_R_TURN = 0;
+int prev_BRAKE = 0;
+
 volatile int L_LEDS = 0;
 volatile int R_LEDS = 0;
 
@@ -32,7 +39,7 @@ unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
 unsigned int blinkDelay = 100;          //milliseconds. Delay between segment blinks
 unsigned long currentMillis = 0;        //milliseconds. 
 unsigned long previousMillis = 0;       //milliseconds.
-
+unsigned long readingMillis = 0;
 
 
 //INITIALIZE BOOLEANS
@@ -41,6 +48,12 @@ bool brakeflag = false;                 //Tells if brake is on (REPLACE WITH BRA
 bool caliWiringSuccess = false;         //Calibration Flag for Wiring
 bool caliTimingSuccess = false;         //Calibration Flag for Signal Timing
 bool hazardFlag = false;                //Emergency Flashers state
+
+
+//INITIALIZE COUNTING VARIABLES
+int brakeCounter = 0;                   //Counts number of times the same reading has been measured
+int L_Counter = 0;
+int R_Counter = 0;
 
 
 //LIGHTING STATES
@@ -62,6 +75,7 @@ const int R2 = 24;
 const int R3 = 56;
 const int R4 = 120;
 const int R5 = 248;
+
 
 
 
@@ -353,12 +367,51 @@ void brakeON() {
 
 //MAIN LOOP. RUNS INFINIETLY
 void loop() {
-  //digitalWrite(TEST_PIN,HIGH);
-  //digitalWrite(TEST_PIN,LOW);
-  //READ PINS
-  BRAKE = digitalRead(BRAKE_PIN);
-  L_TURN = digitalRead(L_TURN_PIN);
-  R_TURN = digitalRead(R_TURN_PIN);
+
+  //used for loop timing
+  digitalWrite(TEST_PIN,HIGH);
+  digitalWrite(TEST_PIN,LOW);
+  
+
+  //READ PINS AND BUFFER 3 OF THE SAME READINGS
+  while (brakeCounter < 3 && L_Counter < 3 && R_Counter < 3) {
+    if (millis() != readingMillis) {                              //limits reads to at least 1ms intervals
+      temp_BRAKE = digitalRead(BRAKE_PIN);
+      temp_L_TURN = digitalRead(L_TURN_PIN);
+      temp_R_TURN = digitalRead(R_TURN_PIN);
+
+
+      if (prev_BRAKE == temp_BRAKE) {
+        brakeCounter++;
+      }
+      else {
+        brakeCounter--;
+      }
+
+
+      if (prev_L_TURN == temp_L_TURN) {
+        L_Counter++;
+      }
+      else {
+        L_Counter--;
+      }
+
+
+      if (prev_R_TURN == temp_R_TURN) {
+        R_Counter++;
+      }
+      else {
+        R_Counter--;
+      }
+
+
+      prev_BRAKE = temp_BRAKE;
+      prev_L_TURN = temp_L_TURN;
+      prev_R_TURN = temp_R_TURN;
+
+      readingMillis = millis();
+    }
+  }
 
 
 
@@ -399,8 +452,9 @@ void loop() {
     }
   }
 
-  //DEFAULT LIGHTING IS PERIPHERY
 
+
+  //DEFAULT LIGHTING IS PERIPHERY
   if (BRAKE == HIGH) {                        //This case should prevent blinking when brake is held down
     L_LEDS = leftPerBrake;                    //L_LEDS will be a container that we can add to to light up different sections
     R_LEDS = rightPerBrake;                   //R_LEDS will be a container that we can add to to light up different sections
@@ -410,6 +464,7 @@ void loop() {
     L_LEDS = leftPer;                         //L_LEDS will be a container that we can add to to light up different sections
     R_LEDS = rightPer;                        //R_LEDS will be a container that we can add to to light up different sections
   }
+
 
 
   //FOUR WIRE SECTION
