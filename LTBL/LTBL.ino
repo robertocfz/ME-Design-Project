@@ -33,9 +33,9 @@ volatile int R_LEDS = 0;
 
 //INITIALIZE TIMING VARIABLES
 unsigned long calibrationStopWatch = 0; //milliseconds. Used for calibration timing
-unsigned int blinkPeriod = 700;         //milliseconds. Active blinking time (HIGH)
+unsigned int blinkPeriod = 450;         //milliseconds. Active blinking time (HIGH)
 unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
-unsigned int blinkDelay = 100;          //milliseconds. Delay between segment blinks
+unsigned int blinkDelay = 75;          //milliseconds. Delay between segment blinks
 unsigned long currentMillis = 0;        //milliseconds. 
 unsigned long previousMillis = 0;       //milliseconds.
 unsigned long readingMillis = 0;
@@ -103,7 +103,7 @@ void setup() {
   //EEPROM.put(1, blinkPeriod);
   isFourWire = EEPROM.read(0);                      //Reading EEPROM for wire calibration data
   blinkPeriod = EEPROM.get(1, blinkPeriod);         //Reading EEPROM for timing calibration data. get instead of read for multiple bytes
-  blinkDelay = blinkPeriod/7;                       //Used for turn signal sequencing
+  blinkDelay = blinkPeriod/6;                       //Used for turn signal sequencing
 
 
   //RESET BLINK
@@ -260,7 +260,7 @@ void calibrateTiming() {
     if (((newTime - blinkPeriod) > 25 || (blinkPeriod - newTime) > 25) && caliTimingSuccess == true) {
       blinkPeriod = (unsigned int) newTime;
       EEPROM.put(1, blinkPeriod);                    //Store new timing in 1st address
-      blinkDelay = blinkPeriod / 7;                  //New delay for horn run sequence
+      blinkDelay = blinkPeriod / 6;                  //New delay for horn run sequence
       updateShift(leftHorn, rightHorn);
       delay(500);
     }
@@ -471,6 +471,7 @@ void loop() {
     if (BRAKE == HIGH) {
 
       if (L_TURN == LOW && R_TURN == LOW) {     //BRAKE + EMERGENCY FLASHERS
+        hazardFlag = true;
         emergencyFlashers(); 
       }
 
@@ -486,6 +487,7 @@ void loop() {
     else {
 
       if (L_TURN == HIGH && R_TURN == HIGH) {   //EMERGENCY FLASHERS
+        hazardFlag = false;
         emergencyFlashers();
       }
 
