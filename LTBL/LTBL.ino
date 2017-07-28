@@ -287,7 +287,7 @@ void runLeft() {
   updateShift(L_LEDS - leftHorn + L5, R_LEDS);
   delay(blinkDelay);
   updateShift(L_LEDS, R_LEDS);
-  //delay(blinkDelay);
+  delay(blinkDelay);
 }
 
 void runRight() {
@@ -305,7 +305,7 @@ void runRight() {
   updateShift(L_LEDS , R_LEDS - rightHorn + R5);
   delay(blinkDelay);
   updateShift(L_LEDS , R_LEDS);
-  //delay(blinkDelay);
+  delay(blinkDelay);
 
 }
 
