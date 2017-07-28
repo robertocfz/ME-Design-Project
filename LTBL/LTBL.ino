@@ -2,7 +2,6 @@
 // Team Members: Rex Baxter, Roberto Salinas, Darren Tan, Zachary Zhou
 
 //LIBRARIES
-#include "Arduino.h"
 #include "PinChangeInterrupt.h"
 #include <EEPROM.h>
 
@@ -372,10 +371,13 @@ void loop() {
   digitalWrite(TEST_PIN,HIGH);
   digitalWrite(TEST_PIN,LOW);
   
+  brakeCounter = 0;
+  L_Counter = 0;
+  R_Counter = 0;
 
   //READ PINS AND BUFFER 3 OF THE SAME READINGS
   while (brakeCounter < 3 && L_Counter < 3 && R_Counter < 3) {
-    if (millis() != readingMillis) {                              //limits reads to at least 1ms intervals
+    if ((millis() - readingMillis) > 3) {                              //limits reads to at least 3ms intervals
       temp_BRAKE = digitalRead(BRAKE_PIN);
       temp_L_TURN = digitalRead(L_TURN_PIN);
       temp_R_TURN = digitalRead(R_TURN_PIN);
@@ -409,15 +411,15 @@ void loop() {
       prev_L_TURN = temp_L_TURN;
       prev_R_TURN = temp_R_TURN;
 
-      readingMillis = millis();
     }
+    readingMillis = millis();
   }
 
 
 
 
   //ENTER CALIBRATION
-  if (millis() < 2000 && BRAKE == HIGH) {      //Brake must be held down when key on 500 ms leniency
+  if (millis() < 2000 && BRAKE == HIGH) {                //Brake must be held down when key on 500 ms leniency
     calibrationStopWatch = millis();                     //Get current time processor has been on
     updateShift(2, 256);
     delay(1000);
@@ -430,14 +432,10 @@ void loop() {
         calibrateWiring();
       }
 
-      BRAKE = digitalRead(BRAKE_PIN);
-
       //TIMING CALIBRATION
       if (caliTimingSuccess == false) {
         calibrateTiming();
       }
-
-      BRAKE = digitalRead(BRAKE_PIN);
 
       if (caliWiringSuccess == true && caliTimingSuccess == true) {
         updateShift(leftPerBrake, 0);
@@ -472,15 +470,15 @@ void loop() {
 
     if (BRAKE == HIGH) {
 
-      if (L_TURN == LOW && R_TURN == LOW) {
+      if (L_TURN == LOW && R_TURN == LOW) {     //BRAKE + EMERGENCY FLASHERS
         emergencyFlashers(); 
       }
 
-      if (L_TURN == LOW && R_TURN == HIGH) {
+      if (L_TURN == LOW && R_TURN == HIGH) {    //BRAKE + LEFT SIGNAL
         runLeft();
       }
 
-      if (L_TURN == HIGH && R_TURN == LOW) {
+      if (L_TURN == HIGH && R_TURN == LOW) {    //BRAKE + RIGHT SIGNAL
         runRight();
       }
     }
@@ -507,20 +505,20 @@ void loop() {
   //FIVE WIRE SECTION
   else {
 
-    if (L_TURN == HIGH && R_TURN == HIGH) {   //EMERGENCY FLASHERS
+    if (L_TURN == HIGH && R_TURN == HIGH) {     //EMERGENCY FLASHERS
       emergencyFlashers();
     }
 
-    if (L_TURN == HIGH) {                     //LEFT SIGNAL
+    if (L_TURN == HIGH) {                       //LEFT SIGNAL
       runLeft();
     }
 
-    if (R_TURN == HIGH) {                     //RIGHT SIGNAL
+    if (R_TURN == HIGH) {                       //RIGHT SIGNAL
       runRight();
     }
   }
 
-  updateShift(L_LEDS, R_LEDS);                //OUTPUT PERIPHERY OR BRAKE LIGHTS
+  updateShift(L_LEDS, R_LEDS);                  //OUTPUT PERIPHERY OR BRAKE LIGHTS
 
 }
 
