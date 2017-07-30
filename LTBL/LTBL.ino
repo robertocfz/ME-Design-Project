@@ -32,18 +32,18 @@ volatile int R_LEDS = 0;
 
 
 //INITIALIZE TIMING VARIABLES
+unsigned int blinkPeriod = 525;         //milliseconds. Active blinking time (HIGH)
+unsigned int blinkDelay = 75;           //milliseconds. Delay between segment blinks
 unsigned long calibrationStopWatch = 0; //milliseconds. Used for calibration timing
-unsigned int blinkPeriod = 450;         //milliseconds. Active blinking time (HIGH)
 unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
-unsigned int blinkDelay = 75;          //milliseconds. Delay between segment blinks
 unsigned long currentMillis = 0;        //milliseconds. 
 unsigned long previousMillis = 0;       //milliseconds.
 unsigned long readingMillis = 0;
 
 
 //INITIALIZE BOOLEANS
+volatile bool brakeflag = false;        //Tells if brake is on. Volatile b/c state changes in Brake Interrupt 
 bool isFourWire = true;                 //Default 4 wire standard in US
-bool brakeflag = false;                 //Tells if brake is on (REPLACE WITH BRAKE VAR)
 bool caliWiringSuccess = false;         //Calibration Flag for Wiring
 bool caliTimingSuccess = false;         //Calibration Flag for Signal Timing
 bool hazardFlag = false;                //Emergency Flashers state
@@ -108,16 +108,8 @@ void setup() {
 
   //RESET BLINK
   //This is just acknowledgement that the controller has reset
-  updateShift(0, 0);
+  blinkLEDS(leftPerBrake, rightPerBrake, 3, 250);
   delay(250);
-  updateShift(leftPerBrake, rightPerBrake);
-  delay(250);
-  updateShift(0, 0);
-  delay(250);
-  updateShift(leftPerBrake, rightPerBrake);
-  delay(250);
-  updateShift(0, 0);
-  delay(500);
 
 }
 
@@ -141,6 +133,12 @@ void updateShift(uint16_t left, uint16_t right) {
   digitalWrite(LATCH, HIGH);
 }
 
+void blinkLEDS(int left, int right, int num, int interval) {
+  for (int i=0; i<num; i++) {
+    updateShift(left, right);
+    delay(interval);
+  }
+}
 
 void calibrateWiring() {
   //detect 4 or 5 wire configuration
@@ -157,14 +155,14 @@ void calibrateWiring() {
         EEPROM.write(0, true);          //Write to 0th memory block that isFourWire = True
         isFourWire = true;
         caliWiringSuccess = true;
-        updateShift(leftHorn,256);
-        delay(500);
+        blinkLEDS(leftBrake, rightBrake, 4, 100);
+        delay(1000);
         break;
       }
       else {
         caliWiringSuccess = true;		    //Current calibration is already Four Wire, good check!
-        updateShift(leftHorn, rightHorn);
-        delay(500);
+        blinkLEDS(leftBrake, rightBrake, 4, 100);
+        delay(1000);
         break;
       }
     }
@@ -173,14 +171,14 @@ void calibrateWiring() {
         EEPROM.write(0, false);         //Write to 0th memory block that isFourWire = False
         isFourWire = false;
         caliWiringSuccess = true;
-        updateShift(2,rightHorn);
-        delay(500);
+        blinkLEDS(leftBrake, rightBrake, 5, 100);
+        delay(1000);
         break;
       }
       else {
         caliWiringSuccess = true;		    //Current calibration is already Five Wire, good check!
-        updateShift(leftHorn, rightHorn);
-        delay(500);
+        blinkLEDS(leftBrake, rightBrake, 5, 100);
+        delay(1000);
         break;
 
       }
@@ -199,34 +197,34 @@ void calibrateTiming() {
 
   calibrationStopWatch = millis();
   unsigned long newTime = 0;
-  updateShift(leftHorn, rightHorn);
+  blinkLEDS(leftHorn,rightHorn,2,250);
 
   while ((millis() - calibrationStopWatch) < caliTimeout && BRAKE == HIGH && caliTimingSuccess == false) {
 
     if (isFourWire == true) {
 
       if (L_TURN == LOW && caliTimingSuccess == false) {
-        updateShift(leftBrake,256);
+        updateShift(leftHorn,0);
         while (digitalRead(L_TURN_PIN) == LOW){
         }
         newTime = pulseIn(L_TURN_PIN, LOW , 3000000) / 1000;
         if (newTime != 0 && newTime < 1500 && newTime > 25) {
           caliTimingSuccess = true;
-          updateShift(leftBrake, rightBrake);
-          delay(500);
+          updateShift(leftHorn,rightHorn);
+          delay(250);
         }
 
       }
 
       if (R_TURN == LOW && caliTimingSuccess == false) {
-        updateShift(leftBrake,128);
+        updateShift(0,rightHorn);
         while (digitalRead(R_TURN_PIN) == LOW) {
         }
         newTime = pulseIn(R_TURN_PIN,LOW , 3000000)/1000;
         if (newTime != 0 && newTime < 1500 && newTime > 25) {
           caliTimingSuccess = true;
-          updateShift(leftBrake, rightBrake);
-          delay(500);
+          updateShift(leftHorn,rightHorn);
+          delay(250);
         }
       }
     }
@@ -234,23 +232,23 @@ void calibrateTiming() {
     else if (isFourWire == false) {
 
       if (L_TURN == HIGH && caliTimingSuccess == false) {
-        updateShift(leftBrake,64);
+        updateShift(leftHorn,0);
         newTime = pulseIn(L_TURN_PIN, LOW , 3000000) / 1000;
         if (newTime != 0 && newTime < 1500 && newTime > 25) {
           caliTimingSuccess = true;
-          updateShift(leftBrake, rightBrake);
-          delay(500);
+          updateShift(leftHorn,rightHorn);
+          delay(250);
         }
 
       }
 
       if (R_TURN == HIGH && caliTimingSuccess == false) {
-        updateShift(leftBrake,32);
+        updateShift(0,rightHorn);
         newTime = pulseIn(R_TURN_PIN,LOW , 3000000)/1000;
         if (newTime != 0 && newTime < 1500 && newTime > 25) {
           caliTimingSuccess = true;
-          updateShift(leftBrake, rightBrake);
-          delay(500);
+          updateShift(leftHorn,rightHorn);
+          delay(250);
         }
       }
     }
@@ -261,8 +259,9 @@ void calibrateTiming() {
       blinkPeriod = (unsigned int) newTime;
       EEPROM.put(1, blinkPeriod);                    //Store new timing in 1st address
       blinkDelay = blinkPeriod / 7;                  //New delay for horn run sequence
-      updateShift(leftHorn, rightHorn);
-      delay(500);
+      runLeft();
+      runRight();
+      delay(1000);
     }
 
     BRAKE = digitalRead(BRAKE_PIN);
@@ -371,22 +370,25 @@ void loop() {
   digitalWrite(TEST_PIN,HIGH);
   digitalWrite(TEST_PIN,LOW);
   
+
+
+  //READ PINS AND BUFFER 3 OF THE SAME READINGS
+
   brakeCounter = 0;
   L_Counter = 0;
   R_Counter = 0;
 
-  //READ PINS AND BUFFER 3 OF THE SAME READINGS
   while (brakeCounter < 3 && L_Counter < 3 && R_Counter < 3) {
-    if ((millis() - readingMillis) > 3) {                              //limits reads to at least 3ms intervals
-      temp_BRAKE = digitalRead(BRAKE_PIN);
+    if ((millis() - readingMillis) > 5) {               //Limits reads to at least 5ms intervals
+      temp_BRAKE = digitalRead(BRAKE_PIN);              //Reading for at least 15ms
       temp_L_TURN = digitalRead(L_TURN_PIN);
       temp_R_TURN = digitalRead(R_TURN_PIN);
 
 
-      if (prev_BRAKE == temp_BRAKE) {
+      if (prev_BRAKE == temp_BRAKE) {                   //If brake is same, add to brake counter                  
         brakeCounter++;
       }
-      else {
+      else {                                            //Else, subtract from brake counter
         brakeCounter--;
       }
 
@@ -445,6 +447,8 @@ void loop() {
         updateShift(leftPerBrake, rightPerBrake);
         delay(250);
         updateShift(0,0);
+        delay(250);
+        updateShift(leftPer, rightPer);
         break;			//All calibrated and ready to roll
       }
     }
