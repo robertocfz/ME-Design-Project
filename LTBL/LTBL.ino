@@ -13,7 +13,7 @@ const int CLK = 8;          //Physical Pin 5
 const int R_TURN_PIN = 2;   //Physical Pin 11
 const int BRAKE_PIN = 1;    //Physical Pin 12
 const int L_TURN_PIN = 0;   //Physical Pin 13
-const int TEST_PIN = 7;     //used for loop time 
+const int TEST_PIN = 7;     //Physical Pin 7  used for loop timing 
 
 //PIN STATES
 int L_TURN = 0;
@@ -36,9 +36,10 @@ unsigned int blinkPeriod = 525;         //milliseconds. Active blinking time (HI
 unsigned int blinkDelay = 75;           //milliseconds. Delay between segment blinks
 unsigned long calibrationStopWatch = 0; //milliseconds. Used for calibration timing
 unsigned long caliTimeout = 10000;      //milliseconds. Calibration mode timeout
-unsigned long currentMillis = 0;        //milliseconds. 
-unsigned long previousMillis = 0;       //milliseconds.
-unsigned long readingMillis = 0;
+unsigned long currentMillis = 0;        //milliseconds. For emergency flashers
+unsigned long previousMillis = 0;       //milliseconds. For emergency flashers
+unsigned long readingMillis = 0;        //milliseconds. Used for reading buffer timing 
+unsigned long newTime = 0;              //milliseconds. pulseIn timing
 
 
 //INITIALIZE BOOLEANS
@@ -108,7 +109,7 @@ void setup() {
 
   //RESET BLINK
   //This is just acknowledgement that the controller has reset
-  blinkLEDS(leftPerBrake, rightPerBrake, 3, 250);
+  blinkLEDS(leftPerBrake, rightPerBrake, 3, 250);   //Blink all LEDs 3 times with 250ms delay
   delay(250);
 
 }
@@ -154,7 +155,7 @@ void calibrateWiring() {
       if (isFourWire != true) {       	//If the current calibration is NOT 4 wire, change to 4 wire
         EEPROM.write(0, true);          //Write to 0th memory block that isFourWire = True
         isFourWire = true;
-        caliWiringSuccess = true;
+        caliWiringSuccess = true;       //Blink center LEDS 4 times with 100ms delay
         blinkLEDS(leftBrake, rightBrake, 4, 100);
         delay(1000);
         break;
@@ -162,7 +163,7 @@ void calibrateWiring() {
       else {
         caliWiringSuccess = true;		    //Current calibration is already Four Wire, good check!
         blinkLEDS(leftBrake, rightBrake, 4, 100);
-        delay(1000);
+        delay(1000);                    //Blink center LEDS 4 times with 100ms delay
         break;
       }
     }
@@ -170,15 +171,15 @@ void calibrateWiring() {
       if (isFourWire != false) {        //If the current calibration is NOT 5 wire, change to 5 wire
         EEPROM.write(0, false);         //Write to 0th memory block that isFourWire = False
         isFourWire = false;
-        caliWiringSuccess = true;
+        caliWiringSuccess = true;       //Blink center LEDS 5 times with 100ms delay
         blinkLEDS(leftBrake, rightBrake, 5, 100);
         delay(1000);
         break;
       }
       else {
         caliWiringSuccess = true;		    //Current calibration is already Five Wire, good check!
-        blinkLEDS(leftBrake, rightBrake, 5, 100);
-        delay(1000);
+        blinkLEDS(leftBrake, rightBrake, 5, 100); 
+        delay(1000);                    //Blink center LEDS 5 times with 100ms delay
         break;
 
       }
@@ -196,8 +197,7 @@ void calibrateTiming() {
   //Timeout after 10 seconds (see pulseIn line)
 
   calibrationStopWatch = millis();
-  unsigned long newTime = 0;
-  blinkLEDS(leftHorn,rightHorn,2,250);
+  blinkLEDS(leftHorn,rightHorn,2,250);          //Blink horns 2 times with a 250ms delay
 
   while ((millis() - calibrationStopWatch) < caliTimeout && BRAKE == HIGH && caliTimingSuccess == false) {
 
