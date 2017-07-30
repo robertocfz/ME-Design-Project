@@ -413,8 +413,9 @@ void loop() {
       prev_L_TURN = temp_L_TURN;
       prev_R_TURN = temp_R_TURN;
 
+      readingMillis = millis();
     }
-    readingMillis = millis();
+    
   }
 
 
