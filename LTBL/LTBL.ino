@@ -138,6 +138,8 @@ void blinkLEDS(int left, int right, int num, int interval) {
   for (int i=0; i<num; i++) {
     updateShift(left, right);
     delay(interval);
+    updateShift(0,0);
+    delay(interval);
   }
 }
 
@@ -198,6 +200,7 @@ void calibrateTiming() {
 
   calibrationStopWatch = millis();
   blinkLEDS(leftHorn,rightHorn,2,250);          //Blink horns 2 times with a 250ms delay
+  updateShift(leftPerBrake,rightPerBrake);
 
   while ((millis() - calibrationStopWatch) < caliTimeout && BRAKE == HIGH && caliTimingSuccess == false) {
 
