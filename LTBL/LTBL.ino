@@ -109,8 +109,14 @@ void setup() {
 
   //RESET BLINK
   //This is just acknowledgement that the controller has reset
-  blinkLEDS(leftPerBrake, rightPerBrake, 3, 250);   //Blink all LEDs 3 times with 250ms delay
-  delay(250);
+  if (isFourWire = true) {
+    blinkLEDS(leftPerBrake, rightPerBrake, 4, 200);   //Blink all LEDs 3 times with 250ms delay
+    delay(250);
+  }
+  else {
+    blinkLEDS(leftPerBrake, rightPerBrake, 5, 200);   //Blink all LEDs 3 times with 250ms delay
+    delay(250);
+  }
 
 }
 
