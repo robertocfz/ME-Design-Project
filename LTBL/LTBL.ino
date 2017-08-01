@@ -392,16 +392,15 @@ void loop() {
   //delay(10);
   //digitalWrite(TEST_PIN,LOW);     
 
- /*
+ 
   //READ PINS AND BUFFER 3 OF THE SAME READINGS
-
   brakeCounter = 0;
   L_Counter = 0;
   R_Counter = 0;
 
-  while (brakeCounter < 5 && L_Counter < 5 && R_Counter < 5) {
-    if ((millis() - readingMillis) > 15) {               //Limits reads to at least 5ms intervals
-      temp_BRAKE = digitalRead(BRAKE_PIN);              //Reading for at least 15ms
+  while (brakeCounter < 5 && L_Counter < 5 && R_Counter < 5 && BRAKE == LOW) {
+    if ((millis() - readingMillis) > 12) {              //Limits reads to at least 15ms intervals
+      temp_BRAKE = digitalRead(BRAKE_PIN);              //Reading for at least 60ms
       temp_L_TURN = digitalRead(L_TURN_PIN);
       temp_R_TURN = digitalRead(R_TURN_PIN);
 
@@ -436,8 +435,6 @@ void loop() {
         BRAKE = temp_BRAKE;
         L_TURN = temp_L_TURN;
         R_TURN = temp_R_TURN;
-        //updateShift(2,256);
-        //delay(1000);
         break;
       }
 
@@ -447,15 +444,15 @@ void loop() {
       
       readingMillis = millis();
     }
-
   }
 
-*/
-  
+
+/*
+  //BASE READING
   BRAKE = digitalRead(BRAKE_PIN);
   L_TURN = digitalRead(L_TURN_PIN);
   R_TURN = digitalRead(R_TURN_PIN);
-
+*/
 
   //DEFAULT LIGHTING IS PERIPHERY LIGHTS
   if (BRAKE == HIGH) {                        //This case should prevent blinking when brake is held down
