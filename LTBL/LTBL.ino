@@ -86,9 +86,9 @@ void setup() {
   pinMode(DATA, OUTPUT);
   pinMode(LATCH, OUTPUT);
   pinMode(CLK, OUTPUT);
-  pinMode(R_TURN_PIN, INPUT);
-  pinMode(BRAKE_PIN, INPUT);
-  pinMode(L_TURN_PIN, INPUT);
+  pinMode(R_TURN_PIN, INPUT_PULLUP);
+  pinMode(BRAKE_PIN, INPUT_PULLUP);
+  pinMode(L_TURN_PIN, INPUT_PULLUP);
 
   pinMode(TEST_PIN, OUTPUT);
 
@@ -134,6 +134,7 @@ void updateShift(uint16_t left, uint16_t right) {
   digitalWrite(LATCH, HIGH);
 }
 
+
 void blinkLEDS(int left, int right, int num, int interval) {
   for (int i = 0; i < num; i++) {
     updateShift(left, right);
@@ -141,7 +142,9 @@ void blinkLEDS(int left, int right, int num, int interval) {
     updateShift(0, 0);
     delay(interval);
   }
+  updateShift(left,right);
 }
+
 
 void calibrateWiring() {
   //detect 4 or 5 wire configuration
@@ -262,8 +265,6 @@ void calibrateTiming() {
       blinkPeriod = (unsigned int) newTime;
       EEPROM.put(1, blinkPeriod);                    //Store new timing in 1st address
       blinkDelay = blinkPeriod / 7;                  //New delay for horn run sequence
-      runLeft();
-      runRight();
       delay(250);
     }
 
@@ -351,6 +352,13 @@ void brakeON() {
     L_LEDS = leftPerBrake;
     R_LEDS = rightPerBrake;
     brakeflag = true;
+
+    /*
+    for(int i=0; i<1000;i++){
+      digitalWrite(TEST_PIN,HIGH);
+      digitalWrite(TEST_PIN,LOW); 
+    }
+    */
   }
 
   else {
@@ -358,12 +366,12 @@ void brakeON() {
     L_LEDS = leftPer;
     R_LEDS = rightPer;
     brakeflag = false;
-    /*
-    for(int i=0; i<1000;i++){
+    
+    for(int i=0; i<300;i++){
       digitalWrite(TEST_PIN,HIGH);
       digitalWrite(TEST_PIN,LOW); 
     }
-    */
+    
   }
 }
 
@@ -374,9 +382,9 @@ void brakeON() {
 void loop() {
   
   //used for loop timing
-  digitalWrite(TEST_PIN,HIGH);
-  delay(10);
-  digitalWrite(TEST_PIN,LOW);     
+  //digitalWrite(TEST_PIN,HIGH);
+  //delay(10);
+  //digitalWrite(TEST_PIN,LOW);     
 
  /*
   //READ PINS AND BUFFER 3 OF THE SAME READINGS
@@ -430,7 +438,7 @@ void loop() {
       prev_BRAKE = temp_BRAKE;
       prev_L_TURN = temp_L_TURN;
       prev_R_TURN = temp_R_TURN;
-
+      
       readingMillis = millis();
     }
 
@@ -443,7 +451,7 @@ void loop() {
   R_TURN = digitalRead(R_TURN_PIN);
 
 
-  //DEFAULT LIGHTING IS PERIPHERY
+  //DEFAULT LIGHTING IS PERIPHERY LIGHTS
   if (BRAKE == HIGH) {                        //This case should prevent blinking when brake is held down
     L_LEDS = leftPerBrake;                    //L_LEDS will be a container that we can add to to light up different sections
     R_LEDS = rightPerBrake;                   //R_LEDS will be a container that we can add to to light up different sections
@@ -496,12 +504,12 @@ void loop() {
   if (isFourWire == true) {
 
     if (BRAKE == HIGH) {
-      /*
+      
       if (L_TURN == LOW && R_TURN == LOW) {     //BRAKE + EMERGENCY FLASHERS
         hazardFlag = true;
         emergencyFlashers();
       }
-      */
+      
       if (L_TURN == LOW && R_TURN == HIGH) {    //BRAKE + LEFT SIGNAL
         runLeft();
       }
@@ -548,7 +556,6 @@ void loop() {
   }
 
   updateShift(L_LEDS, R_LEDS);                  //OUTPUT PERIPHERY OR BRAKE LIGHTS
-  //delay(60);
 }
 
 
