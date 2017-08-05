@@ -3,7 +3,7 @@
 // COMPILED WITH ARDUINO IDE 1.8.2
 // EEPROM Library ver 2.0
 // PinChangeInterrupt Library ver 1.2.4: https://github.com/NicoHood/PinChangeInterrupt 
-// HARDWARE: ATtiny84a, STP16CPC26 16-bit LED Driver, Arduino Uno (ISP)
+// HARDWARE: ATtiny84a, STP16CPC26 16-bit LED Driver, Arduino Uno (as ISP)
 
 
 //LIBRARIES
@@ -93,29 +93,30 @@ void setup() {
   attachPCINT(digitalPinToPCINT(BRAKE_PIN), brakeON, CHANGE);   
 
   //READ EEPROM
-  //EEPROM.write(0,isFourWire);                     //WRITE TO EEPROM FOR FIRST SETUP
+  //EEPROM.write(0,isFourWire);                     //WRITE TO EEPROM FOR FIRST TIME SETUP
   //EEPROM.put(1, blinkPeriod);
   isFourWire = EEPROM.read(0);                      //READING EEPROM FOR WIRE CALIBRATION DATA
   blinkPeriod = EEPROM.get(1, blinkPeriod);         //READING EEPROM FOR TIMING CALIBRATION DATA. GET INSTEAD OF READ FOR MULTIPLE BYTES
   blinkDelay = blinkPeriod / 7;                     //USED FOR TURN SIGNAL SEQUENCING
 
-
+/*
   //RESET BLINK
   //THIS IS JUST ACKNOWLEDGEMENT THAT THE CONTROLLER HAS RESET
   if (isFourWire = true) {
     blinkLEDS(leftPerBrake, rightPerBrake, 4, 200);   //BLINK ALL LEDS 3 TIMES WITH 200MS DELAY
-    delay(250);
+    delay(500);
   }
   else {
     blinkLEDS(leftPerBrake, rightPerBrake, 5, 200);   //BLINK ALL LEDS 3 TIMES WITH 200MS DELAY
-    delay(250);
+    delay(500);
   }
-
+  */
+  
 }
 
 void updateShift(uint16_t left, uint16_t right) {
   //WRITES TO BOTH LED DRIVERS. USE DECIMAL FORMAT TO ADDRESS SPECIFIC BITS
-
+  //OUTPUTS TWO, 16 BIT STRINGS TO SHIFT REGISTERS
   digitalWrite(LATCH, LOW);
 
   for (int i = 0; i < 16; i++) {
@@ -154,8 +155,6 @@ void calibrateWiring() {
 
   calibrationStopWatch = millis();		  //RESET TIMER FOR CALIBRATION MODE
   while (((millis() - calibrationStopWatch) < caliTimeout) && BRAKE == HIGH && caliWiringSuccess == false) {      //TIMEOUT AFTER 10 SECONDS
-    //READ PINS
-
 
     if (BRAKE == HIGH && L_TURN == HIGH && R_TURN == HIGH) {    //4 Wire
       if (isFourWire != true) {       	//IF THE CURRENT CALIBRATION IS NOT 4 WIRE, CHANGE TO 4 WIRE
@@ -200,7 +199,7 @@ void calibrateWiring() {
 
 void calibrateTiming() {
   //CALIBRATE TURN SIGNAL TIMING
-  //TIMEOUT AFTER 10 SECONDS (SEE PULSEIN LINE)
+  //TIMEOUT AFTER 10 SECONDS 
 
   calibrationStopWatch = millis();
   blinkLEDS(leftHorn, rightHorn, 1, 250);       //BLINK HORNS 2 TIMES WITH A 250MS DELAY
@@ -309,8 +308,8 @@ void runRight() {
   delay(blinkDelay);
   updateShift(L_LEDS , R_LEDS);
   delay(blinkDelay);
-
 }
+
 
 
 void emergencyFlashers() {
@@ -331,7 +330,6 @@ void emergencyFlashers() {
       previousMillis = millis();
     }
 
-
     if (BRAKE == LOW && L_TURN == LOW && R_TURN == LOW) {
       break;
     }
@@ -348,16 +346,13 @@ void emergencyFlashers() {
 void brakeON() {
   //INTERRUPT
   //USES INTERRUPT ON BRAKE_PIN TO SWITCH BRAKE SIGNAL
-
   if (brakeflag == false) {
-
     L_LEDS = leftPerBrake;
     R_LEDS = rightPerBrake;
     brakeflag = true;
   }
 
   else {
-
     L_LEDS = leftPer;
     R_LEDS = rightPer;
     brakeflag = false;
@@ -440,6 +435,8 @@ void loop() {
       
       if (L_TURN == LOW && R_TURN == LOW) {     //USED TO CATCH DELAYED FLASHERS FROM BRAKE SIG
         //UNCOMMENT FOR EMERGENCY FLASHERS
+        //THIS IS COMMENTED OUT BECAUSE OF SIGNAL DELAY IN 4-WIRE CARS
+        //SOMETIMES THE BRAKE SIGNALS ARRIVE BEFORE/AFTER TURN SIGNALS WHICH CAUSE LOGIC ISSUES
         //hazardFlag = true;
         //emergencyFlashers();
       }
@@ -457,6 +454,8 @@ void loop() {
 
       if (L_TURN == HIGH && R_TURN == HIGH) {   //USED TO CATCH DELAYED BRAKE SIGNAL
         //UNCOMMENT FOR EMERGENCY FLASHERS
+        //THIS IS COMMENTED OUT BECAUSE OF SIGNAL DELAY IN 4-WIRE CARS
+        //SOMETIMES THE BRAKE SIGNALS ARRIVE BEFORE/AFTER TURN SIGNALS WHICH CAUSE LOGIC ISSUES
         //hazardFlag = false;
         //emergencyFlashers();
 
@@ -494,6 +493,7 @@ void loop() {
   }
 
   updateShift(L_LEDS, R_LEDS);                  //OUTPUT PERIPHERY OR BRAKE LIGHTS
+  delay(20);
 }
 
 
